@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCBA Shorts Generator (Colorful Edition)</title>
+
+    <!-- Load React and dependencies -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icon components -->
+    <script type="text/babel">
+        // Camera Icon for download button
+        const IconCamera = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        );
+        // Palette Icon for theme selector
+        const IconPalette = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        );
+        // Check Circle Icon for correct answer and parsing success
+        const IconCheckCircle = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        );
+        // Dice Icon for randomization
+        const IconDice = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>
+        );
+        // Clipboard Icon for paste block
+        const IconClipboard = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+        );
+
+        // --- Color Theme Configuration (Including Dopamine Colors) ---
+        const THEMES = [
+            { id: 'pink', name: 'Rose', colorPreview: 'bg-pink-500', classes: { 
+                banner: 'bg-pink-900', border: 'border-pink-500', light: 'bg-pink-50', lightBorder: 'border-pink-100', text: 'text-pink-600', badge: 'bg-pink-600', ring: 'focus:ring-pink-400', gradient: 'from-pink-50 via-white to-pink-50', icon: 'text-pink-500' 
+            }},
+            { id: 'blue', name: 'Ocean', colorPreview: 'bg-blue-500', classes: { 
+                banner: 'bg-blue-900', border: 'border-blue-500', light: 'bg-blue-50', lightBorder: 'border-blue-100', text: 'text-blue-600', badge: 'bg-blue-600', ring: 'focus:ring-blue-400', gradient: 'from-blue-50 via-white to-blue-50', icon: 'text-blue-500'
+            }},
+            { id: 'purple', name: 'Royal', colorPreview: 'bg-purple-500', classes: { 
+                banner: 'bg-purple-900', border: 'border-purple-500', light: 'bg-purple-50', lightBorder: 'border-purple-100', text: 'text-purple-600', badge: 'bg-purple-600', ring: 'focus:ring-purple-400', gradient: 'from-purple-50 via-white to-purple-50', icon: 'text-purple-500'
+            }},
+            { id: 'emerald', name: 'Forest', colorPreview: 'bg-emerald-500', classes: { 
+                banner: 'bg-emerald-900', border: 'border-emerald-500', light: 'bg-emerald-50', lightBorder: 'border-emerald-100', text: 'text-emerald-600', badge: 'bg-emerald-600', ring: 'focus:ring-emerald-400', gradient: 'from-emerald-50 via-white to-emerald-50', icon: 'text-emerald-500'
+            }},
+            { id: 'orange', name: 'Sunset', colorPreview: 'bg-orange-500', classes: { 
+                banner: 'bg-orange-900', border: 'border-orange-500', light: 'bg-orange-50', lightBorder: 'border-orange-100', text: 'text-orange-600', badge: 'bg-orange-600', ring: 'focus:ring-orange-400', gradient: 'from-orange-50 via-white to-orange-50', icon: 'text-orange-500'
+            }},
+            { id: 'cyan', name: 'Mint', colorPreview: 'bg-cyan-500', classes: { 
+                banner: 'bg-cyan-900', border: 'border-cyan-500', light: 'bg-cyan-50', lightBorder: 'border-cyan-100', text: 'text-cyan-600', badge: 'bg-cyan-600', ring: 'focus:ring-cyan-400', gradient: 'from-cyan-50 via-white to-cyan-50', icon: 'text-cyan-500'
+            }},
+            { id: 'slate', name: 'Classic', colorPreview: 'bg-slate-700', classes: { 
+                banner: 'bg-slate-900', border: 'border-slate-500', light: 'bg-slate-100', lightBorder: 'border-slate-200', text: 'text-slate-700', badge: 'bg-slate-700', ring: 'focus:ring-slate-400', gradient: 'from-slate-100 via-white to-slate-100', icon: 'text-slate-700'
+            }},
+            // Dopamine Colors
+            { id: 'lime', name: 'Lime', colorPreview: 'bg-lime-500', classes: { 
+                banner: 'bg-lime-700', border: 'border-lime-500', light: 'bg-lime-50', lightBorder: 'border-lime-100', text: 'text-lime-700', badge: 'bg-lime-700', ring: 'focus:ring-lime-400', gradient: 'from-lime-50 via-white to-lime-50', icon: 'text-lime-500'
+            }},
+            { id: 'fuchsia', name: 'Fuchsia', colorPreview: 'bg-fuchsia-600', classes: { 
+                banner: 'bg-fuchsia-800', border: 'border-fuchsia-500', light: 'bg-fuchsia-50', lightBorder: 'border-fuchsia-100', text: 'text-fuchsia-600', badge: 'bg-fuchsia-600', ring: 'focus:ring-fuchsia-400', gradient: 'from-fuchsia-50 via-white to-fuchsia-50', icon: 'text-fuchsia-500'
+            }},
+            { id: 'amber', name: 'Amber', colorPreview: 'bg-amber-500', classes: { 
+                banner: 'bg-amber-700', border: 'border-amber-500', light: 'bg-amber-50', lightBorder: 'border-amber-100', text: 'text-amber-700', badge: 'bg-amber-700', ring: 'focus:ring-amber-400', gradient: 'from-amber-50 via-white to-amber-50', icon: 'text-amber-500'
+            }},
+        ];
+
+        // --- Built-in Question Database ---
+        const QUESTIONS_DB = [
+             {
+                question: "A behavior analyst is measuring the time between the teacher's instruction 'Take out your book' and the student actually taking out the book. What measure is this?",
+                options: [ {id:'A', text:"Duration"}, {id:'B', text:"Latency"}, {id:'C', text:"IRT"}, {id:'D', text:"Rate"} ],
+                correctOptionId: 'B', term: "Measure: Latency", definition: "Latency is the elapsed time between the onset of a stimulus (e.g., instruction) and the initiation of a response."
+            },
+            {
+                question: "Which experimental design involves withdrawing an effective intervention to verify a functional relation between the independent and dependent variables?",
+                options: [ {id:'A', text:"Multiple Baseline"}, {id:'B', text:"Changing Criterion"}, {id:'C', text:"Alternating Treatments"}, {id:'D', text:"Withdrawal / Reversal"} ],
+                correctOptionId: 'D', term: "Design: Withdrawal", definition: "A withdrawal (A-B-A-B) design demonstrates experimental control by showing that behavior changes only when the intervention is present and returns to baseline when removed."
+            },
+            {
+                question: "A client receives a token for every 3rd correct response, regardless of time. What schedule of reinforcement is this?",
+                options: [ {id:'A', text:"Fixed Interval"}, {id:'B', text:"Variable Ratio"}, {id:'C', text:"Fixed Ratio"}, {id:'D', text:"Variable Interval"} ],
+                correctOptionId: 'C', term: "Schedule: Fixed Ratio (FR)", definition: "A Fixed Ratio schedule of reinforcement delivers reinforcement after a fixed number of correct responses."
+            },
+            {
+                question: "A mother nags her son to clean his room. The son cleans his room to stop the nagging. In the future, the son cleans his room more quickly. What maintains the son's behavior?",
+                options: [ {id:'A', text:"Positive Reinforcement"}, {id:'B', text:"Negative Reinforcement"}, {id:'C', text:"Positive Punishment"}, {id:'D', text:"Negative Punishment"} ],
+                correctOptionId: 'B', term: "Negative Reinforcement", definition: "Negative reinforcement involves the removal or termination of an aversive stimulus (nagging) following a response, which increases the future frequency of that behavior."
+            },
+            {
+                question: "Which of the following is NOT a dimension of Applied Behavior Analysis (ABA) as defined by Baer, Wolf, and Risley (1968)?",
+                options: [ {id:'A', text:"Applied"}, {id:'B', text:"Conceptual"}, {id:'C', text:"Mentalistic"}, {id:'D', text:"Technological"} ],
+                correctOptionId: 'C', term: "7 Dimensions: Mentalistic", definition: "Mentalistic is NOT a dimension of ABA. The 7 dimensions are: Applied, Behavioral, Analytic, Technological, Conceptually Systematic, Effective, and Generality."
+            },
+            {
+                question: "A behavior analyst wants to teach a child to wash hands. She breaks the skill down into small steps: turn on water, wet hands, pump soap, etc. What is this procedure called?",
+                options: [ {id:'A', text:"Chaining"}, {id:'B', text:"Shaping"}, {id:'C', text:"Task Analysis"}, {id:'D', text:"Modeling"} ],
+                correctOptionId: 'C', term: "Task Analysis", definition: "Task analysis involves breaking a complex skill or behavioral chain into its individual, teachable components."
+            },
+            {
+                question: "Which verbal operant is controlled by a verbal discriminative stimulus and has point-to-point correspondence but NO formal similarity?",
+                options: [ {id:'A', text:"Echoic"}, {id:'B', text:"Intraverbal"}, {id:'C', text:"Textual"}, {id:'D', text:"Mand"} ],
+                correctOptionId: 'C', term: "Verbal Operant: Textual", definition: "Reading written words (Textual) has point-to-point correspondence with the text but no formal similarity (visual stimulus vs. auditory response)."
+            },
+            {
+                question: "What is the primary difference between a rule and a contingency-shaped behavior?",
+                options: [ {id:'A', text:"Rules are immediate"}, {id:'B', text:"Contingencies involve verbal descriptions"}, {id:'C', text:"Rules describe the contingency"}, {id:'D', text:"Contingency-shaped behavior is faster"} ],
+                correctOptionId: 'C', term: "Rule-Governed Behavior", definition: "Rule-governed behavior is controlled by a verbal description of a contingency (the rule), whereas contingency-shaped behavior is controlled by direct experience with consequences."
+            },
+            {
+                question: "A student is learning to read. The teacher provides a high-five every time the student reads 5 words, then 7 words, then 4 words. What schedule is this?",
+                options: [ {id:'A', text:"FR 5"}, {id:'B', text:"VR 5"}, {id:'C', text:"VI 5"}, {id:'D', text:"FI 5"} ],
+                correctOptionId: 'B', term: "Schedule: Variable Ratio (VR)", definition: "A Variable Ratio schedule delivers reinforcement after an average number of responses (e.g., average of 5), making the response rate steady and high."
+            },
+            {
+                question: "Which assessment method involves manipulating antecedents and consequences in a controlled setting to determine the function of behavior?",
+                options: [ {id:'A', text:"Indirect Assessment"}, {id:'B', text:"Descriptive Assessment"}, {id:'C', text:"Functional Analysis (FA)"}, {id:'D', text:"Scatterplot"} ],
+                correctOptionId: 'C', term: "Functional Analysis (FA)", definition: "Functional Analysis (FA) is the only method that allows for the demonstration of a functional relation by experimentally manipulating variables."
+            },
+            {
+                question: "Using a high-probability behavior to reinforce a low-probability behavior is known as:",
+                options: [ {id:'A', text:"Premack Principle"}, {id:'B', text:"Matching Law"}, {id:'C', text:"Behavioral Momentum"}, {id:'D', text:"Shaping"} ],
+                correctOptionId: 'A', term: "Premack Principle", definition: "The Premack Principle (Grandma's Law) states that making the opportunity to engage in a high-probability behavior contingent on the occurrence of a low-probability behavior will function as reinforcement."
+            },
+            {
+                question: "If a behavior analyst wants to decrease a behavior by reinforcing the ABSENCE of that behavior for a specific time period, they are using:",
+                options: [ {id:'A', text:"DRA"}, {id:'B', text:"DRI"}, {id:'C', text:"DRO"}, {id:'D', text:"DRL"} ],
+                correctOptionId: 'C', term: "DRO (Other Behavior)", definition: "Differential Reinforcement of Other behavior (DRO) delivers reinforcement when the target behavior has NOT occurred during a specific interval."
+            },
+            {
+                question: "What is the defining feature of a Multiple Baseline Design?",
+                options: [ {id:'A', text:"Reversal of phases"}, {id:'B', text:"Staggered implementation of IV"}, {id:'C', text:"Random alternation of treatments"}, {id:'D', text:"Criterion level changes"} ],
+                correctOptionId: 'B', term: "Design: Multiple Baseline", definition: "Multiple Baseline designs stagger the intervention across behaviors, settings, or subjects to demonstrate control without withdrawing the intervention."
+            },
+            {
+                question: "A stimulus change that follows a behavior of interest found to decrease the future frequency of that behavior is:",
+                options: [ {id:'A', text:"Reinforcement"}, {id:'B', text:"Punishment"}, {id:'C', text:"Extinction"}, {id:'D', text:"Motivating Operation"} ],
+                correctOptionId: 'B', term: "Punishment", definition: "By definition, punishment is a consequence that decreases the future frequency of the behavior it follows."
+            },
+            {
+                question: "The 'generality' dimension of ABA refers to behavior change that:",
+                options: [ {id:'A', text:"Occurs in the clinic only"}, {id:'B', text:"Lasts over time and appears in new environments"}, {id:'C', text:"Is theoretically sound"}, {id:'D', text:"Is cost effective"} ],
+                correctOptionId: 'B', term: "Dimension: Generality", definition: "Generality means the behavior change lasts over time, appears in environments other than the one in which it was taught, and spreads to other behaviors."
+            },
+            {
+                question: "You are tracking how many times a student raises their hand. What measurement is this?",
+                options: [ {id:'A', text:"Rate"}, {id:'B', text:"Duration"}, {id:'C', text:"Frequency (Count)"}, {id:'D', text:"IRT"} ],
+                correctOptionId: 'C', term: "Measure: Frequency/Count", definition: "Frequency (or count) is simply the number of times a behavior occurs."
+            },
+             {
+                question: "If you divide the count of behaviors by the observation time (e.g., 10 behaviors in 20 minutes), you are calculating:",
+                options: [ {id:'A', text:"Duration"}, {id:'B', text:"Rate"}, {id:'C', text:"Latency"}, {id:'D', text:"Percentage"} ],
+                correctOptionId: 'B', term: "Measure: Rate", definition: "Rate is frequency per unit of time (e.g., 0.5 responses per minute)."
+            },
+            {
+                question: "Shaping involves differential reinforcement of _______________ to a terminal behavior.",
+                options: [ {id:'A', text:"Alternative behaviors"}, {id:'B', text:"Successive approximations"}, {id:'C', text:"Incompatible behaviors"}, {id:'D', text:"Antecedent stimuli"} ],
+                correctOptionId: 'B', term: "Shaping", definition: "Shaping is the process of differentially reinforcing successive approximations toward a terminal behavior."
+            },
+            {
+                question: "The matching law predicts that the rate of responding on concurrent schedules will match the rate of _______________ obtained on those schedules.",
+                options: [ {id:'A', text:"Punishment"}, {id:'B', text:"Effort"}, {id:'C', text:"Reinforcement"}, {id:'D', text:"Errors"} ],
+                correctOptionId: 'C', term: "Matching Law", definition: "The Matching Law states that the relative rate of responding matches the relative rate of reinforcement."
+            },
+            {
+                question: "Which of the following describes 'Determinism'?",
+                options: [ {id:'A', text:"The universe is chaotic"}, {id:'B', text:"The universe is lawful and orderly"}, {id:'C', text:"Events happen randomly"}, {id:'D', text:"Behavior cannot be predicted"} ],
+                correctOptionId: 'B', term: "Assumption: Determinism", definition: "Determinism is the assumption that the universe is a lawful and orderly place, and events occur as a result of other events."
+            },
+             {
+                question: "An antecedent stimulus that evokes behavior because it signals the availability of reinforcement is called a(n):",
+                options: [ {id:'A', text:"SD (Discriminative Stimulus)"}, {id:'B', text:"S-Delta"}, {id:'C', text:"MO (Motivating Operation)"}, {id:'D', text:"CS (Conditioned Stimulus)"} ],
+                correctOptionId: 'A', term: "SD (Discriminative Stimulus)", definition: "An SD signals that reinforcement is available for a specific behavior."
+            },
+            {
+                question: "An antecedent stimulus that alters the value of a reinforcer and the frequency of behavior that has obtained that reinforcer is called a(n):",
+                options: [ {id:'A', text:"SD"}, {id:'B', text:"S-Delta"}, {id:'C', text:"MO (Motivating Operation)"}, {id:'D', text:"Punisher"} ],
+                correctOptionId: 'C', term: "Motivating Operation (MO)", definition: "An MO (like hunger) changes how much you want a reinforcer (value-altering) and how hard you will work for it (behavior-altering)."
+            },
+            {
+                question: "Validity in measurement refers to:",
+                options: [ {id:'A', text:"Consistency of data"}, {id:'B', text:"Measuring what you intend to measure"}, {id:'C', text:"Agreement between observers"}, {id:'D', text:"Accuracy of the device"} ],
+                correctOptionId: 'B', term: "Validity", definition: "Validity asks: 'Are we measuring what we claimed to measure?'"
+            },
+             {
+                question: "Reliability in measurement refers to:",
+                options: [ {id:'A', text:"Measuring the relevant dimension"}, {id:'B', text:"Getting the same value repeatedly"}, {id:'C', text:"The observed value matching the true value"}, {id:'D', text:"Social significance"} ],
+                correctOptionId: 'B', term: "Reliability", definition: "Reliability refers to the consistency of measurement (getting the same result over and over)."
+            },
+             {
+                question: "A definition of behavior that describes the topography (what it looks like) and magnitude is:",
+                options: [ {id:'A', text:"Functional definition"}, {id:'B', text:"Operational definition"}, {id:'C', text:"Mentalistic definition"}, {id:'D', text:"Hypothetical construct"} ],
+                correctOptionId: 'B', term: "Operational Definition", definition: "Operational definitions must be objective, clear, and complete, describing exactly what the behavior looks like."
+            }
+        ];
+
+        // --- Custom Hook for Dynamic Font Size ---
+        const useFontSizeAdjustment = (questionText) => {
+            if (!questionText) return 'text-2xl'; // Default large size
+            const length = questionText.length;
+            
+            // Optimized logic: more aggressive shrinkage for long texts
+            if (length > 200) {
+                return 'text-base'; // Longest text uses smallest font (16px)
+            }
+            if (length > 150) {
+                return 'text-lg'; // Medium-long text (18px)
+            }
+            if (length > 100) {
+                return 'text-xl'; // Medium text (20px)
+            }
+            // Default largest font for short questions (24px)
+            return 'text-2xl'; 
+        };
+
+        const BCBAShortsGenerator = () => {
+            const previewRef = React.useRef(null);
+            
+            // Define max lengths based on the fixed card size and smallest font (text-base)
+            // 调整字数限制：题目 300，选项 80
+            const MAX_QUESTION_LENGTH = 300; // Conservative limit for question body (Max was 250)
+            const MAX_OPTION_LENGTH = 80; // Conservative limit for each option (Max was 70)
+
+            // Default data state
+            const [data, setData] = React.useState({
+                title: "BCBA Exam Practice",
+                // Updated website as requested
+                website: "www.bcbamockexam.com", 
+                // 默认问题已缩短以符合新的 300 字符限制 (248 chars)
+                question: "A student frequently throws worksheets when independent math is assigned. The teacher walks over and provides help. A behavior analyst hypothesizes the behavior is maintained by social positive reinforcement (attention/help). What is the BEST function-based intervention to reduce throwing?",
+                options: [
+                { id: 'A', text: "Provide the student with a longer break before math to reduce task aversiveness" },
+                { id: 'B', text: "Implement response blocking so the student cannot throw the worksheet" },
+                // 默认选项C已缩短以符合新的 80 字符限制 (67 chars)
+                { id: 'C', text: "Teach the student to appropriately request help, and reinforce this response" },
+                { id: 'D', text: "Use differential reinforcement of low rates (DRL) to gradually decrease throwing" }
+                ],
+                correctOptionId: 'C',
+                term: "Intervention: DRA/Functional Communication Training (FCT)",
+                // 默认解析已微调以保持简洁 (196 chars)
+                definition: "Since the function is social positive reinforcement (attention/help), the best intervention is to teach an appropriate replacement behavior (requesting help) that serves the same function. This is FCT, a form of DRA."
+            });
+
+            const [phase, setPhase] = React.useState('question'); 
+            const [isDownloading, setIsDownloading] = React.useState(false);
+            const [currentTheme, setCurrentTheme] = React.useState(THEMES[0]); // Default Pink
+
+            // Determine the font size class dynamically
+            const questionFontSizeClass = useFontSizeAdjustment(data.question);
+
+            // Handler to update option text with validation
+            const updateOption = (id, text) => {
+                if (text.length > MAX_OPTION_LENGTH) {
+                    showMessage(`选项文本已超过最大限制: ${MAX_OPTION_LENGTH} 个字符。请缩短选项。`, 'error');
+                    return;
+                }
+                const newOptions = data.options.map(opt => 
+                opt.id === id ? { ...opt, text } : opt
+                );
+                setData({ ...data, options: newOptions });
+            };
+
+            // Handler to load a random question from DB
+            const randomizeQuestion = () => {
+                const randomIndex = Math.floor(Math.random() * QUESTIONS_DB.length);
+                const q = QUESTIONS_DB[randomIndex];
+                setData({
+                    ...data,
+                    question: q.question,
+                    options: q.options,
+                    correctOptionId: q.correctOptionId,
+                    term: q.term,
+                    definition: q.definition
+                });
+                setPhase('question');
+            };
+
+            // Logic to parse the question block pasted by the user
+            const parseQuestionBlock = (text) => {
+                const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+                if (lines.length === 0) return null;
+
+                // Regex to match options formatted as "A. ", "B. ", etc.
+                const optionsRegex = /^\s*([A-D])\.\s*(.*)/i;
+                let questionParts = [];
+                let options = [];
+                let isParsingQuestion = true;
+
+                for (const line of lines) {
+                    const match = line.match(optionsRegex);
+                    if (match) {
+                        isParsingQuestion = false;
+                        const id = match[1].toUpperCase();
+                        const optionText = match[2].trim();
+                        options.push({ id, text: optionText });
+                    } else if (isParsingQuestion) {
+                        // Accumulate question text until the first option is found
+                        questionParts.push(line.trim());
+                    } else if (options.length > 0) {
+                        // Handle multi-line options
+                        const lastOption = options[options.length - 1];
+                        lastOption.text += ' ' + line.trim();
+                    }
+                }
+
+                if (options.length !== 4) {
+                    return null;
+                }
+
+                return {
+                    question: questionParts.join('\n').trim(),
+                    options: options.map(opt => ({ id: opt.id, text: opt.text.trim() }))
+                };
+            };
+            
+            // Handler for the paste button with validation
+            const handlePaste = () => {
+                const pasteInput = document.getElementById('pasteInput');
+                if (!pasteInput) return;
+
+                const text = pasteInput.value;
+                if (!text) {
+                    showMessage("请先在文本框中粘贴题目内容。", 'error');
+                    return;
+                }
+
+                const parsed = parseQuestionBlock(text);
+
+                if (parsed && parsed.question) {
+                    if (parsed.question.length > MAX_QUESTION_LENGTH) {
+                        showMessage(`粘贴失败：题目文本 (${parsed.question.length} 字符) 超过最大限制 ${MAX_QUESTION_LENGTH} 字符。请缩短后重试。`, 'error');
+                        return; 
+                    }
+
+                    const optionsTooLong = parsed.options.some(opt => opt.text.length > MAX_OPTION_LENGTH);
+                    if (optionsTooLong) {
+                        showMessage(`粘贴失败：至少一个选项文本超过最大限制 ${MAX_OPTION_LENGTH} 字符。请缩短后重试。`, 'error');
+                        return; 
+                    }
+                    
+                    // Proceed to update state if validation passes
+                    setData(prevData => ({
+                        ...prevData,
+                        question: parsed.question,
+                        options: parsed.options,
+                        // Reset correct answer to 'A' as it can't be parsed
+                        correctOptionId: 'A' 
+                    }));
+                    setPhase('question');
+                    pasteInput.value = ''; // Clear input on success
+                    showMessage("题目已成功加载！请手动设置正确答案和解析。", 'success');
+                } else {
+                    showMessage("解析失败。请确保粘贴内容包含问题文本，并以 'A.','B.','C.','D.' 格式提供四个选项。", 'error');
+                }
+            };
+
+            // Image download handler using html2canvas
+            const downloadImage = async () => {
+                if (!window.html2canvas || !previewRef.current) {
+                showMessage("组件正在加载中，请稍后再试。", 'error');
+                return;
+                }
+                
+                setIsDownloading(true);
+                try {
+                const canvas = await window.html2canvas(previewRef.current, {
+                    scale: 2, 
+                    backgroundColor: null,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const link = document.createElement('a');
+                link.download = `BCBA-${currentTheme.id}-${phase}-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                } catch (err) {
+                console.error("Download failed:", err);
+                showMessage("下载失败，请重试。", 'error');
+                } finally {
+                setIsDownloading(false);
+                }
+            };
+
+            // State and function for custom temporary message box
+            const [message, setMessage] = React.useState({ text: '', isVisible: false, type: 'error' });
+            
+            const showMessage = (text, type = 'error') => {
+                setMessage({ text, isVisible: true, type });
+                setTimeout(() => setMessage(prev => ({ ...prev, isVisible: false })), 3000);
+            };
+
+            return (
+                <div className="flex flex-col lg:flex-row h-screen bg-slate-100 font-sans overflow-hidden">
+                
+                {/* Custom Message Box */}
+                <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl transition-all duration-300 ${message.isVisible ? (message.type === 'error' ? 'bg-red-500 text-white' : message.type === 'success' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white') : 'hidden'}`}>
+                    <span className="font-semibold">{message.text}</span>
+                    <button onClick={() => setMessage(prev => ({ ...prev, isVisible: false }))} className="ml-3 text-white opacity-75 hover:opacity-100">&times;</button>
+                </div>
+
+                {/* Left Panel: Editor */}
+                <div className="w-full lg:w-1/2 p-6 overflow-y-auto bg-white border-r border-slate-200 shadow-lg z-10 flex flex-col">
+                    <div className="mb-6 flex-shrink-0">
+                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <IconPalette className={`w-6 h-6 ${currentTheme.classes.icon}`} />
+                        BCBA Card Generator (题卡生成器)
+                    </h1>
+                    <p className="text-slate-500 text-sm mt-1">
+                        自定义颜色 &rarr; 随机出题 &rarr; 粘贴或输入题目 &rarr; 生成图片
+                    </p>
+                    </div>
+
+                    {/* --- Color Theme Selector --- */}
+                    <div className="mb-6">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Color Theme (颜色主题)</label>
+                        <div className="flex gap-3 flex-wrap">
+                            {THEMES.map((theme) => (
+                                <button
+                                    key={theme.id}
+                                    onClick={() => setCurrentTheme(theme)}
+                                    className={`w-10 h-10 rounded-full ${theme.colorPreview} border-4 transition-transform hover:scale-110 ${currentTheme.id === theme.id ? 'border-slate-800 scale-110 shadow-md' : 'border-white shadow-sm'}`}
+                                    title={theme.name}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* --- Paste Question Block Area --- */}
+                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col gap-2">
+                        <h3 className="text-yellow-700 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                            <IconClipboard className="w-4 h-4 text-yellow-500" />
+                            Paste Question Block (粘贴题目块)
+                        </h3>
+                        <textarea
+                            id="pasteInput"
+                            rows="4"
+                            className="w-full p-2 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none resize-none text-sm"
+                            placeholder="粘贴问题和选项 (例如: 题目文本... A. 选项 1 B. 选项 2 C. 选项 3 D. 选项 4)"
+                        />
+                        <button
+                            onClick={handlePaste}
+                            className={`w-full py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-bold shadow-md transition active:scale-95 text-sm flex items-center justify-center gap-2`}
+                        >
+                            <IconCheckCircle className="w-4 h-4 text-white" />
+                            Parse and Load Question (解析并加载题目)
+                        </button>
+                    </div>
+
+
+                    {/* Randomize Button Area */}
+                    <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2">
+                        <h3 className="text-slate-700 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                            <IconDice className="w-4 h-4" />
+                            Auto Generate (自动生成)
+                        </h3>
+                        <button 
+                            onClick={randomizeQuestion}
+                            className={`w-full py-3 ${currentTheme.classes.banner} hover:opacity-90 text-white rounded-lg font-bold shadow-md transition active:scale-95 flex items-center justify-center gap-2`}
+                        >
+                            🎲 Random 6th Ed Question (随机题目)
+                        </button>
+                    </div>
+
+                    {/* Content Inputs */}
+                    <div className="space-y-6 flex-grow overflow-y-auto pb-24">
+                    {/* Website Info */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Top Banner Text (顶部横幅文本)</label>
+                        <input 
+                        type="text" 
+                        value={data.website}
+                        onChange={(e) => setData({...data, website: e.target.value})}
+                        className={`w-full p-3 border border-slate-300 rounded-lg focus:ring-2 ${currentTheme.classes.ring} focus:border-transparent outline-none transition`}
+                        placeholder="Website URL"
+                        />
+                    </div>
+
+                    {/* Question Input with Validation */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Question (题目)</label>
+                        <textarea 
+                        value={data.question}
+                        onChange={(e) => {
+                            if (e.target.value.length <= MAX_QUESTION_LENGTH) {
+                                setData({...data, question: e.target.value})
+                            } else {
+                                showMessage(`题目文本已超过最大限制: ${MAX_QUESTION_LENGTH} 个字符。请缩短题目。`, 'error');
+                            }
+                        }}
+                        className={`w-full p-3 border border-slate-300 rounded-lg focus:ring-2 ${currentTheme.classes.ring} h-24 resize-none outline-none transition`}
+                        placeholder="Enter your exam question here..."
+                        maxLength={MAX_QUESTION_LENGTH}
+                        />
+                        <p className="text-xs text-slate-500 text-right mt-1">{data.question.length} / {MAX_QUESTION_LENGTH}</p>
+                    </div>
+
+                    {/* Options Input with Validation */}
+                    <div className="space-y-3">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Options (Click letter to set correct answer)</label>
+                        {data.options.map((opt) => (
+                        <div key={opt.id} className="flex items-center gap-2">
+                            <button 
+                            onClick={() => setData({...data, correctOptionId: opt.id})}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition ${data.correctOptionId === opt.id ? 'bg-green-500 text-white shadow-md' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                            >
+                            {opt.id}
+                            </button>
+                            <input 
+                            type="text" 
+                            value={opt.text}
+                            onChange={(e) => updateOption(opt.id, e.target.value)}
+                            className={`flex-1 p-2 border rounded-lg outline-none transition ${data.correctOptionId === opt.id ? 'border-green-400 bg-green-50' : 'border-slate-300'}`}
+                            maxLength={MAX_OPTION_LENGTH}
+                            />
+                        </div>
+                        ))}
+                    </div>
+
+                    {/* Analysis Input */}
+                    <div className={`p-4 ${currentTheme.classes.light} rounded-xl border ${currentTheme.classes.lightBorder} space-y-4`}>
+                        <div className="space-y-2">
+                        <label className={`text-xs font-semibold ${currentTheme.classes.text} uppercase tracking-wider`}>Answer Title / Term (答案标题/术语)</label>
+                        <input 
+                            type="text" 
+                            value={data.term}
+                            onChange={(e) => setData({...data, term: e.target.value})}
+                            className={`w-full p-3 border ${currentTheme.classes.lightBorder} rounded-lg focus:ring-2 ${currentTheme.classes.ring} outline-none`}
+                        />
+                        </div>
+                        <div className="space-y-2">
+                        <label className={`text-xs font-semibold ${currentTheme.classes.text} uppercase tracking-wider`}>Definition / Rationale (定义/原理)</label>
+                        <textarea 
+                            value={data.definition}
+                            onChange={(e) => setData({...data, definition: e.target.value})}
+                            className={`w-full p-3 border ${currentTheme.classes.lightBorder} rounded-lg focus:ring-2 ${currentTheme.classes.ring} h-24 resize-none outline-none`}
+                        />
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Control Buttons Area (Fixed Bottom) */}
+                    <div className="fixed bottom-0 left-0 lg:w-1/2 w-full bg-white border-t border-slate-200 p-4 shadow-lg z-20">
+                    <div className="flex gap-2 mb-3">
+                        <button 
+                        onClick={() => setPhase('question')}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 ${phase === 'question' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                        1. Show Question (显示题目)
+                        </button>
+                        <button 
+                        onClick={() => setPhase('reveal')}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 ${phase === 'reveal' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                        2. Show Answer (显示答案)
+                        </button>
+                    </div>
+                    
+                    <button 
+                        onClick={downloadImage}
+                        disabled={isDownloading}
+                        className={`w-full ${currentTheme.classes.badge} hover:opacity-90 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-50`}
+                    >
+                        {isDownloading ? (
+                        <span>Processing... (正在处理...)</span>
+                        ) : (
+                        <>
+                            <IconCamera className="w-5 h-5" />
+                            Download Current Image (PNG) (下载当前图片)
+                        </>
+                        )}
+                    </button>
+                    </div>
+                </div>
+
+                {/* Right Panel: Preview Area */}
+                <div className="w-full lg:w-1/2 bg-slate-800 flex items-center justify-center p-4 lg:p-8 overflow-hidden">
+                    
+                    {/* Capture Area */}
+                    <div 
+                    ref={previewRef}
+                    className="relative bg-white overflow-hidden shadow-2xl"
+                    style={{ 
+                        width: '375px', // Standard TikTok/Reels size width (9:16 aspect ratio)
+                        height: '667px', // Standard TikTok/Reels size height
+                        minWidth: '375px',
+                        minHeight: '667px'
+                    }}
+                    >
+                    {/* Background Gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-b ${currentTheme.classes.gradient}`}></div>
+                    
+                    {/* Top Banner */}
+                    <div className={`absolute top-0 left-0 right-0 ${currentTheme.classes.banner} text-white py-4 px-5 z-20 flex justify-between items-center shadow-sm`}>
+                        <span className="font-bold text-base tracking-wide">BCBA Exam Prep</span>
+                        <span className="text-xs opacity-90 font-light">{data.website}</span>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="absolute inset-0 pt-20 px-6 pb-6 flex flex-col h-full z-10">
+                        
+                        {/* Question Card (Flex-1 allows it to take up most of the space) */}
+                        <div className={`flex-1 flex flex-col ${phase === 'reveal' ? 'justify-start' : 'justify-center'}`}>
+                        <div className={`bg-white rounded-2xl shadow-xl p-6 border-l-4 ${currentTheme.classes.border} mb-4 relative z-10`}>
+                            <h2 className={`${questionFontSizeClass} font-bold text-slate-800 leading-tight mb-5`}>
+                            {data.question}
+                            </h2>
+                            
+                            <div className="space-y-2">
+                            {data.options.map((opt) => {
+                                const isCorrect = opt.id === data.correctOptionId;
+                                const showResult = phase === 'reveal';
+                                
+                                return (
+                                <div 
+                                    key={opt.id}
+                                    // Adjusted padding to py-1 for maximum vertical space
+                                    className={`py-1 px-2 rounded-lg border flex items-center gap-3 transition-all duration-300 ${
+                                    showResult && isCorrect 
+                                        ? 'bg-green-50 border-green-500 shadow-sm' 
+                                        : showResult && !isCorrect
+                                        ? 'opacity-50 bg-slate-50 border-slate-100'
+                                        : 'bg-white border-slate-200 hover:border-slate-300 cursor-pointer'
+                                    }`}
+                                >
+                                    <span className={`text-sm font-bold flex-shrink-0 ${
+                                        showResult && isCorrect 
+                                        ? 'text-green-900' 
+                                        : 'text-slate-600'
+                                    }`}>
+                                    {/* Display letter followed by dot */}
+                                    {opt.id}.
+                                    </span>
+                                    <span className={`text-sm font-medium leading-tight ${
+                                    showResult && isCorrect 
+                                    ? 'text-green-900' 
+                                    : 'text-slate-600'
+                                    }`}>
+                                    {opt.text}
+                                    </span>
+                                    {showResult && isCorrect && (
+                                    <IconCheckCircle className="w-5 h-5 text-green-600 ml-auto flex-shrink-0" />
+                                    )}
+                                </div>
+                                )
+                            })}
+                            </div>
+                        </div>
+
+                        {/* Answer Analysis Card */}
+                        {phase === 'reveal' && (
+                            <div className={`bg-white rounded-2xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] p-6 border ${currentTheme.classes.lightBorder} mt-2 animate-in slide-in-from-bottom duration-500`}>
+                            <div className="flex justify-center -mt-9 mb-3">
+                                <span className={`${currentTheme.classes.badge} text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-md`}>
+                                Term Analysis
+                                </span>
+                            </div>
+                            
+                            <h3 className="text-2xl font-serif text-slate-800 mb-3 text-center">
+                                {data.term}
+                            </h3>
+                            
+                            <div className={`w-12 h-1 ${currentTheme.classes.light} mx-auto mb-4 rounded-full`}></div>
+
+                            <p className="text-slate-600 text-center leading-relaxed font-medium text-sm">
+                                {data.definition}
+                            </p>
+                            </div>
+                        )}
+                        </div>
+
+                        {/* Bottom Branding (Restored) */}
+                        <div className="mt-auto text-center pt-3">
+                            <p className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest mb-1">Practice More At</p>
+                            <p className={`${currentTheme.classes.text} font-bold text-lg`}>{data.website}</p>
+                        </div>
+
+                    </div>
+                    </div>
+                </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BCBAShortsGenerator />);
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+**/node_modules
+**/.git
+**/n8n_data
+**/n8n_data_*
+**/data
+**/shared
+README.md

@@ -1,0 +1,9 @@
+{
+  "name": "shorts-renderer",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "express": "^4.19.2",
+    "playwright": "1.57.0"
+  }
+}

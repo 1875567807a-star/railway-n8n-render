@@ -1,0 +1,759 @@
+{
+  "updatedAt": "2026-01-31T19:20:46.000Z",
+  "createdAt": "2026-01-26T07:58:04.645Z",
+  "id": "zJwpfkPaGa0NVokz",
+  "name": "BCBA_Youtube_Shorts",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "BCBA Mock Question Generator",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "themeId",
+              "fieldType": "dropdown",
+              "defaultValue": "blue",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "blue"
+                  },
+                  {
+                    "option": "purple"
+                  },
+                  {
+                    "option": "pink"
+                  },
+                  {
+                    "option": "emerald"
+                  },
+                  {
+                    "option": "orange"
+                  },
+                  {
+                    "option": "cyan"
+                  },
+                  {
+                    "option": "slate"
+                  },
+                  {
+                    "option": "lime"
+                  },
+                  {
+                    "option": "fuchsia"
+                  },
+                  {
+                    "option": "amber"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1024,
+        96
+      ],
+      "id": "3bbce4bd-ebc3-49c3-943e-2860d675ee60",
+      "name": "Shorts Generator",
+      "webhookId": "10edd22c-72cc-4b8f-92cc-b151a50ef7e1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const themeId = $json.themeId || \"blue\";\nconst count = $json.count || 1;\n\nconst jobId = new Date().toISOString().replace(/[-:.TZ]/g, \"\").slice(0, 14);\nconst cta = \"For more free BCBA mock exams, visit bcbamockexam.com.\";\n\nreturn [{\n  json: { themeId, count, jobId, cta }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        96
+      ],
+      "id": "2a505766-67db-46d0-aa29-94b201e996b4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Randomly generate exactly ONE NEW BCBA 6th edition style multiple-choice question.\n\nTopic constraint (must follow):\n\nYou MUST follow the domain-selection step in the system message (A–I, weighted).\n\nThe question must be clearly aligned to the chosen domain and NOT drift to another domain.\n\nVariety constraints:\n\nDo NOT repeatedly use the same core concept words (e.g., “reinforcement”, “extinction”, “DRA”) across consecutive outputs.\n\nIf you notice your draft resembles common templates you used recently, regenerate a different scenario, behavior, setting, and terminology.\n\nFormat constraints:\n\nquestion <= 300 characters\n\neach option <= 80 characters\n\nexactly 4 options with keys A,B,C,D\n\ndo NOT reveal the correct answer\n\nOutput ONLY strict JSON matching exactly:\n{\"question\":\"...\",\"options\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"...\"}}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a strict JSON-only generator. Output MUST be exactly ONE valid JSON object and NOTHING else.\nNo markdown, no preface, no explanations, no extra keys.\nResponse must start with \"{\" and end with \"}\".\nSchema MUST be exactly: {\"question\":\"...\",\"options\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"...\"}}\n\nInternal planning rule (do not output):\n\nFirst randomly select exactly ONE domain from A–I using the weights:\nA 5%, B 14%, C 12%, D 7%, E 13%, F 13%, G 14%, H 11%, I 11%.\n\nThen generate a question that clearly belongs to the selected domain.\n\nAvoid overusing the same domain: if your selected domain matches the most recent domain you used in this conversation/session, reselect a different domain.\n\nSelf-check before output (do not print):\n\nquestion length <= 300 characters\n\neach option length <= 80 characters\n\noptions keys are exactly A,B,C,D\n\ndo NOT reveal or hint the correct answer\n\nvalid JSON with proper escaping\nIf any rule fails, regenerate internally until all rules pass."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -576,
+        96
+      ],
+      "id": "d0ec7f1c-4fe5-4501-9e05-04bd96c387f3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\"question\", \"options\"],\n  \"properties\": {\n    \"question\": { \"type\": \"string\", \"maxLength\": 300 },\n    \"options\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"required\": [\"A\", \"B\", \"C\", \"D\"],\n      \"properties\": {\n        \"A\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"B\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"C\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"D\": { \"type\": \"string\", \"maxLength\": 80 }\n      }\n    }\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        320
+      ],
+      "id": "8578f72b-dc3d-4484-a59e-cc0256e1f422",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 兼容不同 Agent 输出字段\nconst raw =\n  $json.output ||\n  $json.text ||\n  $json.response ||\n  $json.result ||\n  $json;\n\nconst s = typeof raw === \"string\" ? raw : JSON.stringify(raw);\n\n// 抓 JSON 段\nconst i = s.indexOf(\"{\");\nconst j = s.lastIndexOf(\"}\");\nif (i < 0 || j < 0) throw new Error(\"Model did not return JSON\");\n\nconst data = JSON.parse(s.slice(i, j + 1));\n\nconst question = (data.question || \"\").trim();\nconst A = (data.options?.A || \"\").trim();\nconst B = (data.options?.B || \"\").trim();\nconst C = (data.options?.C || \"\").trim();\nconst D = (data.options?.D || \"\").trim();\n\n// 拼你 renderer 需要的 questionBlock\nconst questionBlock =\n  `${question}\\n` +\n  `A. ${A}\\n` +\n  `B. ${B}\\n` +\n  `C. ${C}\\n` +\n  `D. ${D}`;\n\n// 拼 TTS 脚本（不读答案）\nconst cta = $('Code in JavaScript').first().json.cta;\nconst voiceScript =\n  `Question. ${question}. ` +\n  `Option A. ${A}. ` +\n  `Option B. ${B}. ` +\n  `Option C. ${C}. ` +\n  `Option D. ${D}. ` +\n  `${cta}`;\n\nreturn [{\n  json: {\n    ...$json,\n    questionBlock,\n    voiceScript,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "be449d4c-4707-47a5-a296-499a21162224",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        320
+      ],
+      "id": "d4dec130-2e3d-4446-b17f-0cacca292d45",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "3ui7s59W0RtucdXz",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3010/render",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "themeId",
+              "value": "={{ $('Shorts Generator').item.json.themeId }}"
+            },
+            {
+              "name": "questionBlock",
+              "value": "={{$json.questionBlock}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "image"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4bdfe916-4b77-4e59-97d8-b9706c615aa4",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/{{$json.id}}_question.png\n",
+        "dataPropertyName": "image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "30cbe7d3-afd4-49f6-a027-0b7a50f115d2",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/voices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "a86b9b4b15e099e470982926a231328379fae5064abaa2a1ede271d4ef2cefb0"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        192
+      ],
+      "id": "24ac56ad-1234-4b42-bb85-9c0c07448128",
+      "name": "TTS"
+    },
+    {
+      "parameters": {
+        "jsCode": "const voices = $input.first().json.voices || [];\nreturn voices.map(v => ({\n  json: {\n    name: v.name,\n    voice_id: v.voice_id,\n    category: v.category,\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        192
+      ],
+      "id": "6ee954d5-c793-4ac5-bca9-d4c2a52ec2cb",
+      "name": "List Voices"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "63a83e85-5518-489d-8fb3-d1a48684be77",
+              "name": "targetVoiceName",
+              "value": "George - Warm, Captivating Storyteller",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        192
+      ],
+      "id": "229fce5b-ee75-40e3-9845-cf53a2c5e790",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 你在 Edit Fields 里填的名字（只取第一条输入即可）\nconst target = (($input.first().json.targetVoiceName) || \"\").trim();\n\n// 从 “TTS” 节点（GET /v1/voices）的输出取数据\n// 注意：这里的 \"TTS\" 必须和你左侧节点名字完全一致\nconst ttsItems = $items(\"TTS\");\nif (!ttsItems || !ttsItems.length) {\n  throw new Error('No output from node \"TTS\". Please execute the TTS (GET /v1/voices) node first.');\n}\n\n// TTS 节点通常只输出 1 item，其中 json.voices 是数组\nconst voices = ttsItems[0].json.voices || [];\nif (!voices.length) {\n  throw new Error('TTS node returned no voices[]. Check your API key / headers and rerun TTS node.');\n}\n\nconst found = voices.find(v => ((v.name || \"\").trim() === target));\nif (!found) {\n  throw new Error(`Voice not found: \"${target}\". Copy the exact name from List Voices.`);\n}\n\n// 只输出 1 条 item，避免后面跑 20 次\nreturn [{\n  json: {\n    targetVoiceName: target,\n    voice_name: found.name,\n    voice_id: found.voice_id,\n    category: found.category,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        192
+      ],
+      "id": "033f3060-8630-4de5-a09a-e1edbc5a6436",
+      "name": "Find Voice ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{$json.voice_id}}?output_format=mp3_22050_32",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$env.ELEVENLABS_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{ \"text\": \"={{$items('Code in JavaScript1')[0].json.voiceScript}}\" }\n",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        896,
+        192
+      ],
+      "id": "a5b48634-6846-4fa0-a1ff-658a16573be4",
+      "name": "TTS VOICE OUTPUT"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/{{$items(\"Code in JavaScript\")[0].json.jobId}}.mp3",
+        "dataPropertyName": "audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        192
+      ],
+      "id": "0e89203e-bb68-4bf1-9179-9d56e1557785",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "command": "=sh -lc '\nls -lah /data;\n\nffmpeg -y \\\n-loop 1 -i \"/data/cover.png\" \\\n-i \"/data/audio.mpga\" \\\n-c:v libx264 -tune stillimage -r 30 -pix_fmt yuv420p \\\n-c:a aac -b:a 192k \\\n-movflags +faststart \\\n-shortest \"/data/output.mp4\";\n\nls -lah /data/output.mp4\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        192
+      ],
+      "id": "91f0aaa7-caf6-4756-9845-e2dfed74c70e",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/data/{{$items(\"Code in JavaScript\")[0].json.jobId}}.mp4",
+        "options": {
+          "mimeType": "video/mp4"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        192
+      ],
+      "id": "c87f5a41-53f5-4786-88bf-2bb431679c87",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfor (const item of items) {\n  if (item.binary?.data) {\n    // 关键：让 YouTube 节点不要拼出 application/mp4\n    item.binary.data.fileExtension = 'octet-stream';\n    item.binary.data.mimeType = 'application/octet-stream';\n\n    // 可选：文件名你想保留 mp4 也行\n    item.binary.data.fileName = item.binary.data.fileName || 'video.mp4';\n  }\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        192
+      ],
+      "id": "6d331e0c-b95d-4394-8c33-052af09becfd",
+      "name": "Fix Upload Mime"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uploadType",
+              "value": "resumable"
+            },
+            {
+              "name": "part",
+              "value": "snippet,status"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            },
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"snippet\": {\n    \"title\": \"BCBA Mock Question in 60 Seconds\",\n    \"description\": \"More free BCBA mock exams: https://bcbamockexam.com/free-bcba-mock-exam\",\n    \"categoryId\": \"27\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\",\n    \"selfDeclaredMadeForKids\": false\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2016,
+        192
+      ],
+      "id": "651ef085-756b-4c04-a95b-69aa4eb7c813",
+      "name": "HTTP Request1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "oAuth2Api": {
+          "id": "UlSLrz7gzdZnJy6g",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.headers.location }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2592,
+        512
+      ],
+      "id": "862546fe-adb6-4f33-810c-4baa5d9e10cb",
+      "name": "HTTP Request2",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "Oz9hCZqszYGJsrGj",
+          "name": "Unnamed credential 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2740fb80-6b71-4e80-8fa0-d72ce5fe74d6",
+              "name": "uploadUrl",
+              "value": "={{$json.headers.location || $json.headers.Location}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2272,
+        512
+      ],
+      "id": "45292e16-0b1f-4c29-9826-7231ce06b532",
+      "name": "Attach Upload URL"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2000,
+        512
+      ],
+      "id": "22c08ba8-2901-47b6-8ca5-003e212a74b8",
+      "name": "Merge"
+    }
+  ],
+  "connections": {
+    "Shorts Generator": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "TTS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS": {
+      "main": [
+        [
+          {
+            "node": "List Voices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Voices": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Find Voice ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Voice ID": {
+      "main": [
+        [
+          {
+            "node": "TTS VOICE OUTPUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS VOICE OUTPUT": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk2": {
+      "main": [
+        [
+          {
+            "node": "Fix Upload Mime",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fix Upload Mime": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Upload URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Attach Upload URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "69758736-a425-4c3d-8dcc-6a3e63c3d5ce",
+  "activeVersionId": null,
+  "versionCounter": 5,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-01-26T07:58:04.649Z",
+      "createdAt": "2026-01-26T07:58:04.649Z",
+      "role": "workflow:owner",
+      "workflowId": "zJwpfkPaGa0NVokz",
+      "projectId": "SNgP6MpD2d8lQyul",
+      "project": {
+        "updatedAt": "2026-01-26T07:56:40.029Z",
+        "createdAt": "2026-01-26T07:54:13.206Z",
+        "id": "SNgP6MpD2d8lQyul",
+        "name": "winter winter <1875567807@qq.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null
+      }
+    }
+  ]
+}

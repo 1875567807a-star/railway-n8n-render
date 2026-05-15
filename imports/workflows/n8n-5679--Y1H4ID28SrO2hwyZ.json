@@ -1,0 +1,882 @@
+{
+  "updatedAt": "2026-02-02T05:59:45.000Z",
+  "createdAt": "2026-01-30T07:00:35.428Z",
+  "id": "Y1H4ID28SrO2hwyZ",
+  "name": "Shorts terms",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const color = $json.color || \"blue\";\nconst design = $json.design || \"minimal\";\nconst termTopic = $json.termTopic || \"Reinforcement\";\n\n// 这个 pageCount 只是给 AI 用，不给 HTML\nconst pageCount = 4;\n\n// 用于生成唯一任务 ID\nconst jobId = new Date().toISOString().replace(/[-:.TZ]/g, \"\").slice(0, 14);\n\nreturn [{\n  json: {\n    color,\n    design,\n    termTopic,\n    pageCount,\n    jobId\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        1456
+      ],
+      "id": "c3b8f24b-c701-4759-8036-4ba5a1fcac1b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a BCBA expert creating SHORT-FORM BCBA TERMS content for slide-based videos.\n\nYou MUST output content in **strict Markdown format** following the exact structure below.\nFormatting errors are NOT allowed.\n\n================ FORMAT RULES (MANDATORY) ================\n\n1. Output must be written in English only.\n2. Use Markdown formatting exactly as shown.\n3. Title must be MAX 15 characters.\n4. Each page must contain 3–4 bullet points.\n5. Each bullet point must be MAX 12 words.\n6. Use **bold** for key concepts only.\n\n---------------- CRITICAL STRUCTURE RULE ----------------\n\n• The separator line `---` MUST appear **ONLY ONCE**.\n• It MUST appear **immediately before [Page 1]**.\n• The [Cover] section MUST NOT have `---` above or below it.\n• NO other pages may have `---` before them.\n\n================ REQUIRED OUTPUT TEMPLATE ================\n\n[Cover]\nTitle: <Term Name>\nSubtitle: <Hook Phrase>\n\n---\n[Page 1]\nPage Title: <Title>\nContent:\n- Bullet 1\n- Bullet 2\n- Bullet 3\n\n[Page 2]\nPage Title: <Title>\nContent:\n- Bullet 1\n- Bullet 2\n- Bullet 3\n\n[Page 3]\nPage Title: <Title>\nContent:\n- Bullet 1\n- Bullet 2\n- Bullet 3\n\n================ END OF RULES ============================\n\nFollow this structure EXACTLY.\nDo not add extra sections.\nDo not move the separator.\nDo not explain your output.\nOnly return the formatted content.\n",
+        "options": {
+          "systemMessage": "You are a BCBA expert and instructional designer.\n\nYou write clear, visually scannable educational content optimized for slide-based short videos.\n\nYour writing must be accurate, concise, and suitable for automated visual rendering.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        448,
+        1344
+      ],
+      "id": "0c61bca4-2f33-4498-82fd-e8282b453f44",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== 强制 BCBA Markdown 格式标准化 =====\n\n// 1️⃣ 读取 AI 输出\nlet text = $json.output;\n\nif (!text || typeof text !== 'string') {\n  throw new Error('AI output is empty or invalid');\n}\n\n// 2️⃣ 统一换行\ntext = text.replace(/\\r\\n/g, '\\n').trim();\n\n// 3️⃣ 移除所有多余的 ---（先全清）\ntext = text.replace(/\\n?---\\n?/g, '\\n');\n\n// 4️⃣ 强制在 Subtitle 后插入唯一的 ---\nconst subtitleMatch = text.match(/Subtitle:.*\\n/);\nif (!subtitleMatch) {\n  throw new Error('Missing Subtitle line');\n}\n\nconst insertIndex = subtitleMatch.index + subtitleMatch[0].length;\ntext =\n  text.slice(0, insertIndex) +\n  '\\n---\\n' +\n  text.slice(insertIndex).trimStart();\n\n// 5️⃣ 禁止 Page 2+ 前出现 ---\nconst invalidPattern = /\\n---\\n\\s*\\[Page (?!1)/;\nif (invalidPattern.test(text)) {\n  throw new Error(\"Invalid '---' placement before Page 2+\");\n}\n\n// 6️⃣ 校验 bullet 长度（<=12词）\nconst bullets = text.split('\\n').filter(l => l.trim().startsWith('- '));\nfor (const line of bullets) {\n  const wordCount = line.replace('- ', '').trim().split(/\\s+/).length;\n  if (wordCount > 12) {\n    throw new Error(`Bullet exceeds 12 words: ${line}`);\n  }\n}\n\n// 7️⃣ 最终结构校验\nif (!text.includes('\\n---\\n[Page 1]')) {\n  throw new Error(\"Final structure invalid: '---' must precede [Page 1]\");\n}\n\n// 8️⃣ 输出标准字段\nreturn [\n  {\n    json: {\n      markdown: text\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        1344
+      ],
+      "id": "f5e4b1fe-732d-45b7-9894-7c320b81d644",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        512,
+        1568
+      ],
+      "id": "67018d42-1065-49fc-8a73-80369090cbfe",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "N2Rf5zRje0bvHMGk",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/voices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$env.ELEVENLABS_API_KEY}}"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1584,
+        1344
+      ],
+      "id": "f25a4eba-1f93-4b13-8b35-1c123e72f9e9",
+      "name": "TTS"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 拿到 voices 列表\nconst voices = $input.first().json.voices || [];\n\n// 2. 找到你要的 voice\nconst targetName = \"George - Warm, Captivating Storyteller\";\nconst targetVoice = voices.find(v => v.name === targetName);\n\nif (!targetVoice) {\n  throw new Error(\"Target voice not found\");\n}\n\n// 3. 把 voice 信息附加到「原始输入的每一条 item」\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,\n    voice_id: targetVoice.voice_id,\n    voice_name: targetVoice.name,\n    voice_category: targetVoice.category\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        1344
+      ],
+      "id": "b3731a41-b4ef-40c6-b8ef-bc6bbd4ec56e",
+      "name": "List Voices"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "63a83e85-5518-489d-8fb3-d1a48684be77",
+              "name": "targetVoiceName",
+              "value": "George - Warm, Captivating Storyteller",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2080,
+        1344
+      ],
+      "id": "13cef508-f8e5-487f-be30-f8dcd43fb3ec",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 你在 Edit Fields 里填的名字（只取第一条输入即可）\nconst target = (($input.first().json.targetVoiceName) || \"\").trim();\n\n// 从 “TTS” 节点（GET /v1/voices）的输出取数据\n// 注意：这里的 \"TTS\" 必须和你左侧节点名字完全一致\nconst ttsItems = $items(\"TTS\");\nif (!ttsItems || !ttsItems.length) {\n  throw new Error('No output from node \"TTS\". Please execute the TTS (GET /v1/voices) node first.');\n}\n\n// TTS 节点通常只输出 1 item，其中 json.voices 是数组\nconst voices = ttsItems[0].json.voices || [];\nif (!voices.length) {\n  throw new Error('TTS node returned no voices[]. Check your API key / headers and rerun TTS node.');\n}\n\nconst found = voices.find(v => ((v.name || \"\").trim() === target));\nif (!found) {\n  throw new Error(`Voice not found: \"${target}\". Copy the exact name from List Voices.`);\n}\n\n// 只输出 1 条 item，避免后面跑 20 次\nreturn [{\n  json: {\n    targetVoiceName: target,\n    voice_name: found.name,\n    voice_id: found.voice_id,\n    category: found.category,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        1344
+      ],
+      "id": "a613a444-b477-492d-8311-b58d56477366",
+      "name": "Find Voice ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $json.voice_id }}?output_format=mp3_22050_32\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$env.ELEVENLABS_API_KEY}}"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"text\": \"={{ $json.text }}\",\n  \"model_id\": \"eleven_multilingual_v2\"\n}\n",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2720,
+        1344
+      ],
+      "id": "6de6b1d6-921b-463c-ba1d-4b4ad6cf5105",
+      "name": "TTS VOICE OUTPUT"
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=sh -lc '\nIMG=\"{{ $json.imagePath }}\"\nAUD=\"{{ $json.audioPath }}\"\nOUT=\"/data/page-{{ $json.pageIndex }}.mp4\"\n\nffmpeg -y \\\n  -loop 1 -framerate 25 -i \"$IMG\" \\\n  -i \"$AUD\" \\\n  -c:v libx264 \\\n  -profile:v baseline \\\n  -level 3.0 \\\n  -pix_fmt yuv420p \\\n  -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" \\\n  -c:a aac \\\n  -b:a 192k \\\n  -shortest \\\n  -movflags +faststart \\\n  \"$OUT\"\n\nls -lah \"$OUT\"\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3376,
+        1344
+      ],
+      "id": "d7374f25-8594-4613-958f-d65477d0940b",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3020/render_terms",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "markdown",
+              "value": "={{$json.markdown}}"
+            },
+            {
+              "name": "color",
+              "value": "={{$json.color || 'blue'}}"
+            },
+            {
+              "name": "design",
+              "value": "={{$json.design || 'minimal'}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        1344
+      ],
+      "id": "dc02b92a-866b-49a9-8574-96cfc35e5878",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "formTitle": "BCBA Terms Shorts Generator",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "color",
+              "fieldType": "dropdown",
+              "defaultValue": "blue",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "blue"
+                  },
+                  {
+                    "option": "purple"
+                  },
+                  {
+                    "option": "pink"
+                  },
+                  {
+                    "option": "emerald"
+                  },
+                  {
+                    "option": "orange"
+                  },
+                  {
+                    "option": "cyan"
+                  },
+                  {
+                    "option": "slate"
+                  },
+                  {
+                    "option": "lime"
+                  },
+                  {
+                    "option": "fuchsia"
+                  },
+                  {
+                    "option": "amber"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "design",
+              "fieldType": "dropdown",
+              "defaultValue": "minimal",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "minimal"
+                  },
+                  {
+                    "option": "bold"
+                  },
+                  {
+                    "option": "glass"
+                  },
+                  {
+                    "option": "clean"
+                  },
+                  {
+                    "option": "card"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "termTopic",
+              "placeholder": "e.g. Reinforcement, Extinction, Prompt Fading"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        1456
+      ],
+      "id": "fe4bfda0-6ad0-42f8-a30a-1e09df6a69d1",
+      "name": "BCBA Terms Shorts Generator",
+      "webhookId": "10edd22c-72cc-4b8f-92cc-b151a50ef7e1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 取选中的 Voice 信息（只取一次）\nconst voice = $input.first().json;\n\n// 从 Edit Fields 节点拿 PNG 对应的文本\nreturn $items(\"Edit Fields\").map(item => {\n  return {\n    json: {\n      // 👉 这里就是“朗读 PNG 文本”的唯一来源\n      text: item.json.pageText || item.json.text || item.json.content,\n\n      // 保留 ElevenLabs 需要的 voice 信息\n      voice_id: voice.voice_id,\n      voice_name: voice.voice_name\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2512,
+        1344
+      ],
+      "id": "5136c34f-fcf8-43a4-908b-1caa166435cd",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst runDir = items[0].json.runDir;\nconst files = items[0].json.files;\n\nreturn files\n  .filter(f => f !== 'cover.png')\n  .map((file, index) => ({\n    json: {\n      pageIndex: index + 1,\n      imagePath: `${runDir}/${file}`,\n      text: `这是第 ${index + 1} 页的内容朗读`,\n      audioPath: `/data/page-${index + 1}.mp3`\n    }\n  }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        1344
+      ],
+      "id": "bfea6eb4-c961-45f9-890b-cdb6b237672b",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const runDir = $node[\"HTTP Request\"].json.runDir;\n\nreturn items.map((item, index) => {\n  const pageIndex = index + 1;\n\n  return {\n    json: {\n      pageIndex,\n      imagePath: `${runDir}/page-${pageIndex}.png`,\n      audioPath: `/data/page-${pageIndex}.mp3`\n    },\n    binary: {\n      audio: item.binary.audio   // ⭐ 关键：把音频带下去\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2928,
+        1344
+      ],
+      "id": "5d03cb06-a967-41d3-b2ea-51ee6d9cb0cb",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "command": "sh -lc '\ncd /data || exit 1\n\n# 生成 concat 列表（顺序非常重要）\nprintf \"file '\\''page-1.mp4'\\''\\nfile '\\''page-2.mp4'\\''\\nfile '\\''page-3.mp4'\\''\\n\" > list.txt\n\n# 合并为 final.mp4（Windows 100% 可播）\nffmpeg -y \\\n  -f concat -safe 0 \\\n  -i list.txt \\\n  -c copy \\\n  -movflags +faststart \\\n  final.mp4\n\nls -lah final.mp4\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        1344
+      ],
+      "id": "25a004e8-b58e-4ea5-9f87-3425af8e77ac",
+      "name": "Execute Command5"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{$json.audioPath}}",
+        "dataPropertyName": "audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        1344
+      ],
+      "id": "10f0ca03-1e7c-4388-afc0-82d154e1e552",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "sh -lc '\nIN=\"/data/final.mp4\"\nOUT=\"/data/final-9x16.mp4\"\n\nffmpeg -y \\\n  -i \"$IN\" \\\n  -vf \"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920\" \\\n  -c:v libx264 \\\n  -profile:v baseline \\\n  -level 3.0 \\\n  -pix_fmt yuv420p \\\n  -r 30 \\\n  -c:a aac \\\n  -b:a 192k \\\n  -movflags +faststart \\\n  \"$OUT\"\n\nls -lah \"$OUT\"\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        1344
+      ],
+      "id": "924259cc-56ee-47f2-b78e-c43cc023908b",
+      "name": "Execute Command6"
+    },
+    {
+      "parameters": {
+        "command": "sh -lc '\ncd /data || exit 1;\n\nffmpeg -y \\\n-i cover-av.mp4 \\\n-i final-9x16.mp4 \\\n-filter_complex \"\n[0:v]setpts=PTS-STARTPTS[v0];\n[1:v]setpts=PTS-STARTPTS[v1];\n[0:a]asetpts=PTS-STARTPTS[a0];\n[1:a]asetpts=PTS-STARTPTS[a1];\n[v0][a0][v1][a1]concat=n=2:v=1:a=1[outv][outa]\n\" \\\n-map \"[outv]\" -map \"[outa]\" \\\n-c:v libx264 -pix_fmt yuv420p -r 30 \\\n-c:a aac \\\n-movflags +faststart \\\nfinal-with-cover.mp4;\n\nls -lah final-with-cover.mp4\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3936,
+        1344
+      ],
+      "id": "f46bc4f7-3883-4be7-8fcf-79e9b38635e4",
+      "name": "Execute Command7"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/final-with-cover.mp4",
+        "options": {
+          "mimeType": "video/mp4"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        4144,
+        1344
+      ],
+      "id": "185683a3-b950-424e-baa2-853f8cd46a4c",
+      "name": "Read/Write Files from Disk3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfor (const item of items) {\n  if (item.binary?.data) {\n    // 关键：让 YouTube 节点不要拼出 application/mp4\n    item.binary.data.fileExtension = 'octet-stream';\n    item.binary.data.mimeType = 'application/octet-stream';\n\n    // 可选：文件名你想保留 mp4 也行\n    item.binary.data.fileName = item.binary.data.fileName || 'video.mp4';\n  }\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4448,
+        1200
+      ],
+      "id": "c6e56dca-a708-421a-bbec-9f6c70050b38",
+      "name": "Fix Upload Mime1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uploadType",
+              "value": "resumable"
+            },
+            {
+              "name": "part",
+              "value": "snippet,status"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            },
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "video/mp4"
+            },
+            {
+              "name": "X-Upload-Content-Length",
+              "value": "={{$binary.data.fileSize}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"snippet\": {\n    \"title\": \"BCBA Mock Question in 60 Seconds\",\n    \"description\": \"More free BCBA mock exams: https://bcbamockexam.com/free-bcba-mock-exam\",\n    \"categoryId\": \"27\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\",\n    \"selfDeclaredMadeForKids\": false\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4704,
+        1200
+      ],
+      "id": "63cd4cc9-4b81-4253-bf93-b4db3b47d137",
+      "name": "HTTP Request1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "oAuth2Api": {
+          "id": "1nQmcUfcYXRO6Vd1",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.headers.location }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        5024,
+        1552
+      ],
+      "id": "61deda67-fc6c-4b00-adf2-aaa8f3aca1f5",
+      "name": "HTTP Request2",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "1nQmcUfcYXRO6Vd1",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2740fb80-6b71-4e80-8fa0-d72ce5fe74d6",
+              "name": "uploadUrl",
+              "value": "={{$json.headers.location || $json.headers.Location}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4704,
+        1552
+      ],
+      "id": "3787061f-a39a-4ff9-acae-891b7f43ad6a",
+      "name": "Attach Upload URL1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4432,
+        1552
+      ],
+      "id": "325bdcb0-f0a2-497a-a908-1168cb658fea",
+      "name": "Merge1"
+    }
+  ],
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS": {
+      "main": [
+        [
+          {
+            "node": "List Voices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Voices": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Find Voice ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Voice ID": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BCBA Terms Shorts Generator": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "TTS VOICE OUTPUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS VOICE OUTPUT": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Execute Command5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command5": {
+      "main": [
+        [
+          {
+            "node": "Execute Command6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command6": {
+      "main": [
+        [
+          {
+            "node": "Execute Command7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command7": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Upload URL1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Attach Upload URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk3": {
+      "main": [
+        [
+          {
+            "node": "Fix Upload Mime1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fix Upload Mime1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f9dfe5f5-7b14-45a3-a7ca-420d2d153f29",
+  "activeVersionId": null,
+  "versionCounter": 6,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-01-30T07:00:35.437Z",
+      "createdAt": "2026-01-30T07:00:35.437Z",
+      "role": "workflow:owner",
+      "workflowId": "Y1H4ID28SrO2hwyZ",
+      "projectId": "m4MskO9a38eX6cZW",
+      "project": {
+        "updatedAt": "2026-01-30T06:58:17.309Z",
+        "createdAt": "2026-01-30T06:55:26.652Z",
+        "id": "m4MskO9a38eX6cZW",
+        "name": "w w <1875567807a@qq.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null
+      }
+    }
+  ]
+}

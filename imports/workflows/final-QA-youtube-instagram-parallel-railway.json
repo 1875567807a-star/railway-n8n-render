@@ -1,0 +1,1216 @@
+{
+  "name": "final QA YouTube Instagram Railway",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const themeId = $json.themeId || \"blue\";\nconst count = $json.count || 1;\n\nconst jobId = new Date().toISOString().replace(/[-:.TZ]/g, \"\").slice(0, 14);\nconst cta = \"For more free BCBA mock exams, visit bcbamockexam.com.\";\n\nreturn [{\n  json: { themeId, count, jobId, cta }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        784
+      ],
+      "id": "6d57697f-2d90-40b1-b7bb-7a1b1cda5088",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Randomly generate exactly ONE NEW BCBA 6th edition style multiple-choice question.\n\nTopic constraint (must follow):\n\nYou MUST follow the domain-selection step in the system message (A–I, weighted).\n\nThe question must be clearly aligned to the chosen domain and NOT drift to another domain.\n\nVariety constraints:\n\nDo NOT repeatedly use the same core concept words (e.g., “reinforcement”, “extinction”, “DRA”) across consecutive outputs.\n\nIf you notice your draft resembles common templates you used recently, regenerate a different scenario, behavior, setting, and terminology.\n\nFormat constraints:\n\nquestion <= 300 characters\n\neach option <= 80 characters\n\nexactly 4 options with keys A,B,C,D\n\ndo NOT reveal the correct answer\n\nOutput ONLY strict JSON matching exactly:\n{\"question\":\"...\",\"options\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"...\"}}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a strict JSON-only generator. Output MUST be exactly ONE valid JSON object and NOTHING else.\nNo markdown, no preface, no explanations, no extra keys.\nResponse must start with \"{\" and end with \"}\".\nSchema MUST be exactly: {\"question\":\"...\",\"options\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"...\"}}\n\nInternal planning rule (do not output):\n\nFirst randomly select exactly ONE domain from A–I using the weights:\nA 5%, B 14%, C 12%, D 7%, E 13%, F 13%, G 14%, H 11%, I 11%.\n\nThen generate a question that clearly belongs to the selected domain.\n\nAvoid overusing the same domain: if your selected domain matches the most recent domain you used in this conversation/session, reselect a different domain.\n\nSelf-check before output (do not print):\n\nquestion length <= 300 characters\n\neach option length <= 80 characters\n\noptions keys are exactly A,B,C,D\n\ndo NOT reveal or hint the correct answer\n\nvalid JSON with proper escaping\nIf any rule fails, regenerate internally until all rules pass."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        208,
+        768
+      ],
+      "id": "d4a02027-0db2-4085-87e3-ac9d1451d160",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\"question\", \"options\"],\n  \"properties\": {\n    \"question\": { \"type\": \"string\", \"maxLength\": 300 },\n    \"options\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"required\": [\"A\", \"B\", \"C\", \"D\"],\n      \"properties\": {\n        \"A\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"B\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"C\": { \"type\": \"string\", \"maxLength\": 80 },\n        \"D\": { \"type\": \"string\", \"maxLength\": 80 }\n      }\n    }\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        1056
+      ],
+      "id": "5248bb5e-ce53-4b0d-b6cd-93dc7065a2e8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 兼容不同 Agent 输出字段\nconst raw =\n  $json.output ||\n  $json.text ||\n  $json.response ||\n  $json.result ||\n  $json;\n\nconst s = typeof raw === \"string\" ? raw : JSON.stringify(raw);\n\n// 抓 JSON 段\nconst i = s.indexOf(\"{\");\nconst j = s.lastIndexOf(\"}\");\nif (i < 0 || j < 0) throw new Error(\"Model did not return JSON\");\n\nconst data = JSON.parse(s.slice(i, j + 1));\n\nconst question = (data.question || \"\").trim();\nconst A = (data.options?.A || \"\").trim();\nconst B = (data.options?.B || \"\").trim();\nconst C = (data.options?.C || \"\").trim();\nconst D = (data.options?.D || \"\").trim();\n\n// 拼你 renderer 需要的 questionBlock\nconst questionBlock =\n  `${question}\\n` +\n  `A. ${A}\\n` +\n  `B. ${B}\\n` +\n  `C. ${C}\\n` +\n  `D. ${D}`;\n\n// 拼 TTS 脚本（不读答案）\nconst cta = $('Code in JavaScript').first().json.cta;\nconst voiceScript =\n  `Question. ${question}. ` +\n  `Option A. ${A}. ` +\n  `Option B. ${B}. ` +\n  `Option C. ${C}. ` +\n  `Option D. ${D}. ` +\n  `${cta}`;\n\nreturn [{\n  json: {\n    ...$json,\n    questionBlock,\n    voiceScript,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        768
+      ],
+      "id": "1f5c92b3-e408-4499-8b7c-9ed54580d829",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        160,
+        1040
+      ],
+      "id": "7d15d5a9-9236-4542-9d89-33cab2b16518",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "eLDQkatcfv3X0pf1",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3010/render",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "themeId",
+              "value": "={{ $('Bitable:table:record:search bitable').item.json.data.items[0].fields.themeld }}"
+            },
+            {
+              "name": "questionBlock",
+              "value": "={{$json.questionBlock}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "image"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1200,
+        688
+      ],
+      "id": "49fee27d-c6ae-4760-8a04-404ded9b9491",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{$items(\"Code in JavaScript\")[0].json.jobId}}_question.png",
+        "dataPropertyName": "image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        688
+      ],
+      "id": "303e042c-fdae-4f59-9663-5353b9456ace",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/voices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$env.ELEVENLABS_API_KEY}}"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1184,
+        896
+      ],
+      "id": "5dd9e74f-180d-4df9-a32c-ce192c2a8431",
+      "name": "TTS"
+    },
+    {
+      "parameters": {
+        "jsCode": "const voices = $input.first().json.voices || [];\nreturn voices.map(v => ({\n  json: {\n    name: v.name,\n    voice_id: v.voice_id,\n    category: v.category,\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        896
+      ],
+      "id": "be4ccab0-c60a-4ad3-bba1-eef4980855ac",
+      "name": "List Voices"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "63a83e85-5518-489d-8fb3-d1a48684be77",
+              "name": "targetVoiceName",
+              "value": "Liam - Energetic, Social Media Creator",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        896
+      ],
+      "id": "5b89c5ab-9660-4b1b-8f26-95ee70cedd3b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 你在 Edit Fields 里填的名字（只取第一条输入即可）\nconst target = (($input.first().json.targetVoiceName) || \"\").trim();\n\n// 从 “TTS” 节点（GET /v1/voices）的输出取数据\n// 注意：这里的 \"TTS\" 必须和你左侧节点名字完全一致\nconst ttsItems = $items(\"TTS\");\nif (!ttsItems || !ttsItems.length) {\n  throw new Error('No output from node \"TTS\". Please execute the TTS (GET /v1/voices) node first.');\n}\n\n// TTS 节点通常只输出 1 item，其中 json.voices 是数组\nconst voices = ttsItems[0].json.voices || [];\nif (!voices.length) {\n  throw new Error('TTS node returned no voices[]. Check your API key / headers and rerun TTS node.');\n}\n\nconst found = voices.find(v => ((v.name || \"\").trim() === target));\nif (!found) {\n  throw new Error(`Voice not found: \"${target}\". Copy the exact name from List Voices.`);\n}\n\n// 只输出 1 条 item，避免后面跑 20 次\nreturn [{\n  json: {\n    targetVoiceName: target,\n    voice_name: found.name,\n    voice_id: found.voice_id,\n    category: found.category,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        896
+      ],
+      "id": "6cecdf0c-e6d0-4de7-9be8-bc92aedc6e05",
+      "name": "Find Voice ID"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{$items(\"Code in JavaScript\")[0].json.jobId}}.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        896
+      ],
+      "id": "18623f42-4f29-4b38-9150-6c6c5f3b7309",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "command": "=sh -lc '\nID=\"{{ $items(\"Code in JavaScript\")[0].json.jobId }}\";\n\necho \"ID=$ID\";\necho \"Check files in /tmp:\";\nls -lah /tmp;\n\necho \"Start ffmpeg...\";\nffmpeg -y \\\n  -loop 1 -i \"/tmp/${ID}_question.png\" \\\n  -i \"/tmp/${ID}.mp3\" \\\n  -c:v libx264 \\\n  -profile:v high -level 4.2 \\\n  -pix_fmt yuv420p \\\n  -r 30 \\\n  -g 60 -keyint_min 60 -sc_threshold 0 \\\n  -c:a aac -b:a 192k \\\n  -movflags +faststart \\\n  -shortest \\\n  \"/tmp/${ID}.mp4\"\n\necho \"Done:\";\nls -lah \"/tmp/${ID}.mp4\"\n'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        896
+      ],
+      "id": "e301df27-6d49-433f-9287-7946ab6b5d80",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{$items(\"Code in JavaScript\")[0].json.jobId}}.mp4",
+        "options": {
+          "mimeType": "video/mp4"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2992,
+        896
+      ],
+      "id": "489f95e0-63aa-494c-a858-655621fd1043",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfor (const item of items) {\n  if (item.binary?.data) {\n    // 关键：让 YouTube 节点不要拼出 application/mp4\n    item.binary.data.fileExtension = 'octet-stream';\n    item.binary.data.mimeType = 'application/octet-stream';\n\n    // 可选：文件名你想保留 mp4 也行\n    item.binary.data.fileName = item.binary.data.fileName || 'video.mp4';\n  }\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        864
+      ],
+      "id": "31f5c5a0-8867-4b37-be55-6eb0da646f2a",
+      "name": "Fix Upload Mime2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2740fb80-6b71-4e80-8fa0-d72ce5fe74d6",
+              "name": "uploadUrl",
+              "value": "={{$json.headers.location || $json.headers.Location}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3744,
+        1184
+      ],
+      "id": "7ffe1acf-e0f3-49d6-8b43-b20f2e75cf50",
+      "name": "Attach Upload URL2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uploadType",
+              "value": "resumable"
+            },
+            {
+              "name": "part",
+              "value": "snippet,status"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            },
+            {
+              "name": "X-Upload-Content-Type",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"snippet\": {\n    \"title\": \"BCBA Mock Question in 60 Seconds\",\n    \"description\": \"For more BCBA exam prep resources, go to https://bcbamockexam.com/?utm_source=youtube&utm_medium=video_description&utm_campaign=bcba_video_test\\n\\n#shorts\",\n    \"categoryId\": \"27\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\",\n    \"selfDeclaredMadeForKids\": false\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3488,
+        864
+      ],
+      "id": "7bfbc6f3-9c5d-4c42-b54d-950c8dc6c34d",
+      "name": "HTTP Request6",
+      "alwaysOutputData": true,
+      "credentials": {
+        "oAuth2Api": {
+          "id": "jiZPWsLh4HQSYYJT",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.headers.location }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4064,
+        1184
+      ],
+      "id": "1a97d124-dcd5-4bd0-91d3-5adb20344aeb",
+      "name": "HTTP Request7",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "jiZPWsLh4HQSYYJT",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3472,
+        1184
+      ],
+      "id": "fd74533c-9b97-42d6-b54d-869690ec7629",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{$json.voice_id}}?output_format=mp3_22050_32",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{$env.ELEVENLABS_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{ \"text\": \"={{$items('Code in JavaScript1')[0].json.voiceScript}}\" }\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2144,
+        896
+      ],
+      "id": "80062019-c917-42e4-af9c-082b65b15002",
+      "name": "TTS VOICE OUTPUT1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2176,
+        784
+      ],
+      "id": "8d56cba4-25a3-4c56-a5cf-dadca8016393",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  themeId: $json.data.items[0].fields.themeld\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        768
+      ],
+      "id": "b29da555-3d5e-4e13-950b-1d913949c649",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "resource": "bitable",
+        "operation": "bitable:table:record:update",
+        "app_toke": "MiMybemcFaV3SUsa5ZAc80TnnVc",
+        "table_id": "tblmdZ827DYzFg4Q",
+        "record_id": "={{ $items(\"Bitable:table:record:search bitable\")[0].json.data.items[0].record_id }}",
+        "body": "{\n  \"fields\": {\n    \"状态\": \"已处理\"\n  }\n}\n"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        4336,
+        1184
+      ],
+      "id": "c2ef0d66-7538-4591-a004-87b0d0c45926",
+      "name": "Bitable:table:record:update bitable",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "5BQ2pQFDcAsimI7J",
+          "name": "Feishu account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FEISHU_BOT_WEBHOOK_URL}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n  const recordId = $json.data?.record?.record_id || $items(\"Bitable:table:record:search bitable\")[0].json.data.items[0].record_id;\n  const time = new Date().toLocaleString(\"zh-CN\", { timeZone: \"Asia/Shanghai\", hour12: false });\n\n  return {\n    msg_type: \"text\",\n    content: {\n      text: \"<at user_id=\\\"all\\\">???</at>\\nYouTube Question Shorts ???\\n??ID?\" + recordId + \"\\n???\" + time\n    }\n  };\n})() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4592,
+        1184
+      ],
+      "id": "66972179-ab3f-46c4-8c9a-941ad2d29474",
+      "name": "Feishu Bot Notify - YouTube"
+    },
+    {
+      "parameters": {
+        "resource": "bitable",
+        "operation": "bitable:table:record:search",
+        "app_toke": "MiMybemcFaV3SUsa5ZAc80TnnVc",
+        "table_id": "tblmdZ827DYzFg4Q",
+        "page_size": 1,
+        "body": "{\n  \"filter\": {\n    \"conjunction\": \"and\",\n    \"conditions\": [\n      {\n        \"field_name\": \"状态\",\n        \"operator\": \"is\",\n        \"value\": [\"新提交\"]\n      }\n    ]\n  },\n  \"sort\": [\n    {\n      \"field_name\": \"创建时间\",\n      \"order\": \"asc\"\n    }\n  ]\n}\n"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        -1536,
+        768
+      ],
+      "id": "54ccdbda-0ed2-42b3-a2e9-e7b7b42b5153",
+      "name": "Bitable:table:record:search bitable",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "5BQ2pQFDcAsimI7J",
+          "name": "Feishu account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "91303cc2-05a7-4067-8494-c84650ade69a",
+              "leftValue": "={{ new Date().getHours() }}",
+              "rightValue": 12,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "8485edab-c5b1-4b19-973a-c7880d81027a",
+              "leftValue": "={{ new Date().getHours() }}",
+              "rightValue": 18,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "6da62bce-d3f3-4f7d-8b19-5b19d414fa0c",
+              "leftValue": "={{ new Date().getHours() }}",
+              "rightValue": 22,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1856,
+        768
+      ],
+      "id": "15e20944-1c49-48a5-b30e-be067922684a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=sh -lc '\nset -e\nID=\"{{ $items(\"Code in JavaScript\")[0].json.jobId }}\"\nPNG=\"/tmp/${ID}_question.png\"\nJPG=\"/tmp/${ID}_instagram.jpg\"\n\ntest -f \"$PNG\"\nffmpeg -y -i \"$PNG\" \\\n  -vf \"scale=1080:1350:force_original_aspect_ratio=decrease,pad=1080:1350:(ow-iw)/2:(oh-ih)/2:white\" \\\n  -q:v 2 \\\n  \"$JPG\" >/dev/null 2>&1\n\nnode -e \"eval(Buffer.from(\\\"Y29uc3QgZnMgPSByZXF1aXJlKCJmcyIpOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoImh0dHBzIik7CmNvbnN0IGZpbGVQYXRoID0gcHJvY2Vzcy5hcmd2WzFdOwpjb25zdCBmaWxlbmFtZSA9IHByb2Nlc3MuYXJndlsyXSB8fCAiaW5zdGFncmFtLmpwZyI7CmlmICghZmlsZVBhdGggfHwgIWZzLmV4aXN0c1N5bmMoZmlsZVBhdGgpKSB7CiAgY29uc29sZS5lcnJvcigiVXBsb2FkIGZpbGUgbm90IGZvdW5kOiAiICsgZmlsZVBhdGgpOwogIHByb2Nlc3MuZXhpdCgxKTsKfQpjb25zdCBib3VuZGFyeSA9ICItLS0tbjhuRm9ybUJvdW5kYXJ5IiArIERhdGUubm93KCkudG9TdHJpbmcoMTYpOwpjb25zdCBmaWxlID0gZnMucmVhZEZpbGVTeW5jKGZpbGVQYXRoKTsKY29uc3QgaGVhZCA9IEJ1ZmZlci5mcm9tKCItLSIgKyBib3VuZGFyeSArICJcclxuIiArICJDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9XCJmaWxlc1tdXCI7IGZpbGVuYW1lPVwiIiArIGZpbGVuYW1lICsgIlwiXHJcbiIgKyAiQ29udGVudC1UeXBlOiBpbWFnZS9qcGVnXHJcblxyXG4iKTsKY29uc3QgdGFpbCA9IEJ1ZmZlci5mcm9tKCJcclxuLS0iICsgYm91bmRhcnkgKyAiLS1cclxuIik7CmNvbnN0IGJvZHkgPSBCdWZmZXIuY29uY2F0KFtoZWFkLCBmaWxlLCB0YWlsXSk7CmNvbnN0IHJlcSA9IGh0dHBzLnJlcXVlc3QoewogIG1ldGhvZDogIlBPU1QiLAogIGhvc3RuYW1lOiAidWd1dS5zZSIsCiAgcGF0aDogIi91cGxvYWQucGhwIiwKICBoZWFkZXJzOiB7CiAgICAiQ29udGVudC1UeXBlIjogIm11bHRpcGFydC9mb3JtLWRhdGE7IGJvdW5kYXJ5PSIgKyBib3VuZGFyeSwKICAgICJDb250ZW50LUxlbmd0aCI6IGJvZHkubGVuZ3RoLAogICAgIlVzZXItQWdlbnQiOiAibjhuLWluc3RhZ3JhbS11cGxvYWRlciIKICB9Cn0sIChyZXMpID0+IHsKICBsZXQgZGF0YSA9ICIiOwogIHJlcy5zZXRFbmNvZGluZygidXRmOCIpOwogIHJlcy5vbigiZGF0YSIsIGNodW5rID0+IGRhdGEgKz0gY2h1bmspOwogIHJlcy5vbigiZW5kIiwgKCkgPT4gewogICAgaWYgKHJlcy5zdGF0dXNDb2RlIDwgMjAwIHx8IHJlcy5zdGF0dXNDb2RlID49IDMwMCkgewogICAgICBjb25zb2xlLmVycm9yKGRhdGEpOwogICAgICBwcm9jZXNzLmV4aXQoMSk7CiAgICB9CiAgICBwcm9jZXNzLnN0ZG91dC53cml0ZShkYXRhKTsKICB9KTsKfSk7CnJlcS5vbigiZXJyb3IiLCAoZXJyb3IpID0+IHsKICBjb25zb2xlLmVycm9yKGVycm9yLm1lc3NhZ2UpOwogIHByb2Nlc3MuZXhpdCgxKTsKfSk7CnJlcS53cml0ZShib2R5KTsKcmVxLmVuZCgpOw==\\\",\\\"base64\\\").toString())\" \"$JPG\" \"${ID}_instagram.jpg\"\n'"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        496
+      ],
+      "id": "d129f98b-dbc0-4baa-8c6d-3d9de40f1b6d",
+      "name": "Instagram Upload Image to Uguu"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String($json.stdout || $json.data || $json.output || '').trim();\nif (!raw) {\n  throw new Error('Instagram image upload returned empty response');\n}\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  throw new Error('Instagram image upload returned non-JSON response: ' + raw.slice(0, 300));\n}\nif (!parsed.success || !Array.isArray(parsed.files) || !parsed.files[0]?.url) {\n  throw new Error('Instagram image upload failed: ' + raw.slice(0, 500));\n}\nconst imageUrl = String(parsed.files[0].url);\nconst qa = $('Code in JavaScript1').first().json;\nconst question = String(qa.questionBlock || '').split('\\n')[0] || 'BCBA Mock Question';\nconst caption = 'BCBA Mock Question in 60 Seconds\\n\\n' + question + '\\n\\nMore free BCBA mock exams: https://bcbamockexam.com/free-bcba-mock-exam';\nreturn [{\n  json: {\n    imageUrl,\n    uploadedFileName: parsed.files[0].filename,\n    uploadedSize: parsed.files[0].size,\n    question,\n    caption,\n    altText: 'BCBA mock exam question graphic'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        496
+      ],
+      "id": "33874c99-942c-4aa4-93da-296e5d50ab6c",
+      "name": "Instagram Parse Upload URL"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1d3d0a90-9a6e-40a6-a819-61dbe26df8d3",
+              "name": "apiVersion",
+              "value": "v25.0",
+              "type": "string"
+            },
+            {
+              "id": "e6e40b5e-74bc-43c7-a6f0-b4412c28f694",
+              "name": "igUserId",
+              "value": "17841479957531051",
+              "type": "string"
+            },
+            {
+              "id": "fd2c87fa-65b4-42b4-a0f4-26d72152a63d",
+              "name": "metaAccessToken",
+              "value": "={{$env.META_ACCESS_TOKEN}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2096,
+        496
+      ],
+      "id": "f2f7ff14-d64d-4249-bdfb-dae0752a85f2",
+      "name": "Instagram Config"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nfunction isMissing(value) {\n  const text = String(value || '').trim();\n  return !text || text.startsWith('REPLACE_WITH_');\n}\nif (isMissing(item.json.igUserId)) {\n  throw new Error('Instagram Config: fill igUserId with your Instagram Professional Account ID');\n}\nif (isMissing(item.json.metaAccessToken)) {\n  throw new Error('Instagram Config: fill metaAccessToken with a Meta access token that has instagram_content_publish');\n}\nif (!item.json.imageUrl) {\n  throw new Error('Instagram Config: missing imageUrl');\n}\nreturn [item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        496
+      ],
+      "id": "6a9895a5-88a6-46ce-b845-d36de170e3a4",
+      "name": "Instagram Validate Config"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{$json.apiVersion}}/{{$json.igUserId}}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{$json.imageUrl}}"
+            },
+            {
+              "name": "caption",
+              "value": "={{$json.caption}}"
+            },
+            {
+              "name": "alt_text",
+              "value": "={{$json.altText}}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$json.metaAccessToken}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2544,
+        496
+      ],
+      "id": "ba5ec0d7-88af-433c-b8db-5448f99409e9",
+      "name": "Instagram Create Media"
+    },
+    {
+      "parameters": {
+        "amount": 60,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        2768,
+        496
+      ],
+      "id": "84eefb02-9a8d-45ac-91dd-9f3187fa2ed0",
+      "name": "Instagram Wait Before Publish"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{$node[\"Instagram Config\"].json.apiVersion}}/{{$node[\"Instagram Config\"].json.igUserId}}/media_publish",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{$node[\"Instagram Create Media\"].json.id}}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$node[\"Instagram Config\"].json.metaAccessToken}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2992,
+        496
+      ],
+      "id": "0ef8c818-55ac-4c5b-8c0d-76c4a9e2cbb",
+      "name": "Instagram Publish Media"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/{{$node[\"Instagram Config\"].json.apiVersion}}/{{$json.id}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,permalink,media_type,media_product_type,timestamp,caption"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$node[\"Instagram Config\"].json.metaAccessToken}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3216,
+        496
+      ],
+      "id": "6aec1914-0c6b-4f48-8aa4-b17d5cba1b6c",
+      "name": "Instagram Get Permalink"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FEISHU_BOT_WEBHOOK_URL}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n  const recordId = $items(\"Bitable:table:record:search bitable\")[0].json.data.items[0].record_id;\n  const question = String($items(\"Code in JavaScript1\")[0].json.questionBlock || '').split('\\n')[0] || 'BCBA Mock Question';\n  const permalink = $json.permalink || '';\n  const mediaId = $json.id || '';\n  const time = new Date().toLocaleString(\"zh-CN\", { timeZone: \"Asia/Shanghai\", hour12: false });\n\n  return {\n    msg_type: \"text\",\n    content: {\n      text: \"<at user_id=\\\"all\\\">???</at>\\nInstagram Question ?????\\n???\" + question + \"\\n??ID?\" + recordId + \"\\nMedia ID?\" + mediaId + \"\\n???\" + permalink + \"\\n???\" + time\n    }\n  };\n})() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3440,
+        496
+      ],
+      "id": "df9e7468-a4b5-4ec8-8234-619fcfd480d0",
+      "name": "Feishu Bot Notify - Instagram"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "List Voices": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Find Voice ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk2": {
+      "main": [
+        [
+          {
+            "node": "Fix Upload Mime2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS": {
+      "main": [
+        [
+          {
+            "node": "List Voices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Voice ID": {
+      "main": [
+        [
+          {
+            "node": "TTS VOICE OUTPUT1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix Upload Mime2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Upload URL2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request6": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Attach Upload URL2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS VOICE OUTPUT1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "Bitable:table:record:update bitable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bitable:table:record:update bitable": {
+      "main": [
+        [
+          {
+            "node": "Feishu Bot Notify - YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bitable:table:record:search bitable": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Bitable:table:record:search bitable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Instagram Upload Image to Uguu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Upload Image to Uguu": {
+      "main": [
+        [
+          {
+            "node": "Instagram Parse Upload URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Parse Upload URL": {
+      "main": [
+        [
+          {
+            "node": "Instagram Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Config": {
+      "main": [
+        [
+          {
+            "node": "Instagram Validate Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Validate Config": {
+      "main": [
+        [
+          {
+            "node": "Instagram Create Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Create Media": {
+      "main": [
+        [
+          {
+            "node": "Instagram Wait Before Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Wait Before Publish": {
+      "main": [
+        [
+          {
+            "node": "Instagram Publish Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Publish Media": {
+      "main": [
+        [
+          {
+            "node": "Instagram Get Permalink",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Get Permalink": {
+      "main": [
+        [
+          {
+            "node": "Feishu Bot Notify - Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "de52e14a-82cf-4d64-b9d6-b78ee8a18d8e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d3195ea5111bff6e6fd85cc2baeb7233a45fcbd9bd518417ea7fae4161c9e13"
+  },
+  "id": "o2mJuBqCtABFbeiB",
+  "tags": []
+}

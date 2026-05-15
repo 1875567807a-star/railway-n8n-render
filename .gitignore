@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+.env
+.env.*
+n8n_data/
+n8n_data_*/
+data/
+shared/
+*.sqlite
+*.db
+credentials-*/

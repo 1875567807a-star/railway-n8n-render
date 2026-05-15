@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCBA Mock Exam - Premium Designer</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-page: #f1f5f9; 
+            --bg-panel: #ffffff; 
+            --bg-card: #ffffff; 
+            --primary: #0f172a; 
+            --accent: #3b82f6;  
+            --muted: #64748b;
+            --card-width: 360px;
+            --card-height: 640px; 
+            --main-font: "Inter", -apple-system, system-ui, sans-serif;
+        }
+
+        body {
+            font-family: var(--main-font);
+            background-color: var(--bg-page);
+            color: var(--primary);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-container {
+            display: flex;
+            width: 100%;
+            max-width: 1440px;
+            min-height: 100vh;
+        }
+
+        /* --- Sidebar --- */
+        .control-panel {
+            width: 440px;
+            background-color: var(--bg-panel);
+            padding: 30px;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        h1 { font-size: 20px; font-weight: 900; margin-bottom: 25px; letter-spacing: -0.5px; color: var(--primary); }
+
+        .module {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .module h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 12px 0; }
+
+        .option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px; }
+        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px; }
+
+        .color-dot { width: 100%; aspect-ratio: 1; border-radius: 12px; border: 3px solid transparent; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .color-dot.active { border-color: #000; transform: scale(1.1); }
+
+        .style-btn { padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
+        .style-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* AI Prompt Area */
+        #aiPromptDisplay {
+            width: 100%;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            height: 140px;
+            resize: none;
+        }
+
+        textarea, input[type="text"] { width: 100%; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-size: 13px; }
+        .btn-primary { background: #0f172a; color: #fff; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; width: 100%; transition: 0.2s; }
+
+        /* --- Preview Area --- */
+        .preview-area { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 60px; overflow-y: auto; }
+
+        /* --- Card Foundation --- */
+        .shorts-card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: var(--bg-card);
+            border-radius: 32px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+        }
+
+        .shorts-card-inner {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- Common Elements --- */
+        .page-category { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; z-index: 2; }
+        .page-title { font-size: 34px; font-weight: 900; line-height: 1.1; margin: 0 0 25px 0; z-index: 2; }
+        .page-body { font-size: 18px; line-height: 1.5; flex-grow: 1; z-index: 2; }
+        .page-body ul { list-style: none; padding: 0; margin: 0; }
+        .page-body li { position: relative; padding-left: 28px; margin-bottom: 18px; }
+        .page-body li::before { content: "•"; position: absolute; left: 0; top: -3px; font-size: 26px; color: var(--accent); }
+        .page-body strong { font-weight: 900; color: var(--primary); border-bottom: 2px solid var(--accent); }
+
+        .footer-info { position: absolute; bottom: 35px; left: 30px; right: 30px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px; z-index: 10; }
+        .brand-name { font-size: 11px; font-weight: 800; color: var(--muted); }
+        .page-num { font-size: 10px; font-weight: 900; color: #cbd5e1; }
+
+        /* --- Styles --- */
+        .style-minimal .card-header-bar { height: 8px; width: 100%; background-color: var(--accent); flex-shrink: 0; }
+        .style-minimal .page-layout { padding: 40px 30px; }
+        .style-minimal .page-category { color: var(--accent); }
+
+        .style-split .card-header-bar { height: 220px; width: 100%; background-color: var(--accent); position: absolute; top: 0; left: 0; z-index: 0; }
+        .style-split .page-layout { padding: 50px 30px; position: relative; z-index: 2; }
+        .style-split .page-category { color: rgba(255,255,255,0.9); }
+        .style-split .page-title { color: #fff; margin-bottom: 100px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .style-split .page-body { background: #fff; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-top: -20px; }
+
+        .style-bold { border: 4px solid #000; border-radius: 0; box-shadow: 12px 12px 0 #000; }
+        .style-bold .page-layout { padding: 40px 25px; }
+        .style-bold .page-title { text-transform: uppercase; -webkit-text-stroke: 1px #000; }
+        .style-bold .page-body li::before { content: "➜"; color: #000; font-size: 16px; top: 2px; }
+
+        .style-glass { background: linear-gradient(135deg, var(--bg-card) 0%, #fff 100%); }
+        .style-glass::before { content: ""; position: absolute; width: 300px; height: 300px; background: var(--accent); filter: blur(120px); top: -100px; left: -100px; opacity: 0.25; z-index: 0; }
+        .style-glass .page-layout { padding: 50px 30px; position: relative; z-index: 1; }
+        .style-glass .page-body { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.4); border-radius: 24px; padding: 25px; }
+
+        .style-frame { padding: 12px; background-color: var(--accent); }
+        .style-frame .shorts-card-inner { background: #fff; height: 100%; border-radius: 20px; }
+        .style-frame .page-layout { padding: 40px 25px; }
+
+        /* Cover Layout */
+        .cover-layout { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 2; position: relative; }
+        .cover-tag { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 15px; background: #fff; padding: 6px 14px; border-radius: 100px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .cover-title { font-size: 44px; font-weight: 900; line-height: 1.1; margin-bottom: 15px; }
+        .cover-divider { width: 40px; height: 4px; background: var(--accent); margin-bottom: 20px; }
+        .cover-subtitle { font-size: 20px; font-weight: 600; color: var(--muted); }
+
+        .card-container { display: flex; flex-direction: column; align-items: center; }
+        .actions { margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="control-panel">
+            <h1>🎨 Premium Designer</h1>
+            
+            <div class="module">
+                <h3>1. Copy AI Prompt</h3>
+                <textarea readonly id="aiPromptDisplay">
+Act as a BCBA expert for www.bcbamockexam.com. Break down the term: [INSERT TERM].
+Constraints:
+- English only.
+- Title: MAX 15 chars (Short & Punchy).
+- Content: 3-4 concise bullet points.
+- Bullet length: MAX 12 words for mobile.
+- Use **bold** for key concepts.
+
+[Cover]
+Title: (Term Name)
+Subtitle: (Hook Phrase)
+---
+[Page 1]
+Page Title: Definition
+Content:
+- Point 1
+- Point 2
+                </textarea>
+                <button class="style-btn" style="width:100%" onclick="copyPrompt()">Copy Prompt Text</button>
+            </div>
+
+            <div class="module">
+                <h3>2. Design & Colors</h3>
+                <div class="option-grid">
+                    <button class="style-btn active" id="btn-minimal" onclick="setLayout('minimal')">Minimalist</button>
+                    <button class="style-btn" id="btn-split" onclick="setLayout('split')">Split Block</button>
+                    <button class="style-btn" id="btn-bold" onclick="setLayout('bold')">Neo-Pop</button>
+                    <button class="style-btn" id="btn-glass" onclick="setLayout('glass')">Glassmorphism</button>
+                    <button class="style-btn" id="btn-frame" onclick="setLayout('frame')">Clean Frame</button>
+                </div>
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+
+            <div class="module">
+                <h3>3. Input Content</h3>
+                <textarea id="markdownInput" placeholder="Paste AI content here..."></textarea>
+                <button class="btn-primary" onclick="processInput()">Generate Preview</button>
+            </div>
+
+            <div class="module">
+                <h3>4. Branding</h3>
+                <input type="text" id="brandInput" value="www.bcbamockexam.com" oninput="renderAll()">
+                <label>Custom Bg Images:</label>
+                <input type="file" onchange="uploadBg('cover', event)">
+                <input type="file" onchange="uploadBg('page', event)" style="margin-top:5px;">
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea"></div>
+    </div>
+
+    <script>
+        const themes = {
+            blue: { accent: '#3b82f6', bgCard: '#ffffff', primary: '#0f172a' },
+            pink: { accent: '#ec4899', bgCard: '#fff1f2', primary: '#831843' },
+            teal: { accent: '#14b8a6', bgCard: '#f0fdfa', primary: '#134e4a' },
+            orange: { accent: '#f97316', bgCard: '#fff7ed', primary: '#7c2d12' },
+            purple: { accent: '#a855f7', bgCard: '#faf5ff', primary: '#581c87' },
+            yellow: { accent: '#eab308', bgCard: '#fefce8', primary: '#713f12' },
+            green: { accent: '#22c55e', bgCard: '#f0fdf4', primary: '#14532d' },
+            cyan: { accent: '#06b6d4', bgCard: '#ecfeff', primary: '#164e63' },
+            rose: { accent: '#f43f5e', bgCard: '#fff1f2', primary: '#881337' },
+            indigo: { accent: '#6366f1', bgCard: '#eef2ff', primary: '#312e81' }
+        };
+
+        let state = {
+            theme: 'blue',
+            layout: 'minimal',
+            brand: "www.bcbamockexam.com",
+            cover: { title: "Dopamine Design", subtitle: "Visual Mastery for BCBAs" },
+            pages: [],
+            bgs: { cover: null, page: null }
+        };
+
+        function initColors() {
+            const grid = document.getElementById('colorGrid');
+            Object.keys(themes).forEach(key => {
+                const dot = document.createElement('div');
+                dot.className = `color-dot ${state.theme === key ? 'active' : ''}`;
+                dot.style.backgroundColor = themes[key].accent;
+                dot.onclick = () => setTheme(key);
+                grid.appendChild(dot);
+            });
+        }
+
+        function setTheme(key) {
+            state.theme = key;
+            document.querySelectorAll('.color-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', Object.keys(themes)[i] === key);
+            });
+            const t = themes[key];
+            document.documentElement.style.setProperty('--accent', t.accent);
+            document.documentElement.style.setProperty('--bg-card', t.bgCard);
+            document.documentElement.style.setProperty('--primary', t.primary);
+            renderAll();
+        }
+
+        function setLayout(key) {
+            state.layout = key;
+            document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${key}`).classList.add('active');
+            renderAll();
+        }
+
+        function copyPrompt() {
+            const el = document.getElementById('aiPromptDisplay');
+            el.select();
+            document.execCommand('copy');
+        }
+
+        function uploadBg(type, e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => { state.bgs[type] = ev.target.result; renderAll(); };
+            reader.readAsDataURL(file);
+        }
+
+        function processInput() {
+            const text = document.getElementById('markdownInput').value;
+            if (!text) return;
+            const sections = text.split('---');
+            const titleMatch = sections[0].match(/Title:\s*(.*)/i);
+            const subMatch = sections[0].match(/Subtitle:\s*(.*)/i);
+            if (titleMatch) state.cover.title = titleMatch[1].trim();
+            if (subMatch) state.cover.subtitle = subMatch[1].trim();
+
+            state.pages = [];
+            const pageRegex = /\[Page\s*\d+\]\s*Page Title:\s*(.*)\s*Content:\s*([\s\S]*?)(?=\[Page|$)/gi;
+            let match;
+            const contentPart = sections.slice(1).join('---');
+            while ((match = pageRegex.exec(contentPart)) !== null) {
+                state.pages.push({ title: match[1].trim(), content: match[2].trim() });
+            }
+            renderAll();
+        }
+
+        function renderAll() {
+            state.brand = document.getElementById('brandInput').value;
+            const preview = document.getElementById('previewArea');
+            preview.innerHTML = '';
+            const layoutClass = `style-${state.layout}`;
+
+            // Cover
+            preview.innerHTML += `
+                <div class="card-container">
+                    <div class="shorts-card ${layoutClass}" id="card-cover">
+                        <div class="shorts-card-inner" style="background-image: url(${state.bgs.cover || ''}); background-size: cover;">
+                            <div class="card-header-bar"></div>
+                            <div class="cover-layout">
+                                <div class="cover-tag">Mastery Prep</div>
+                                <h1 class="cover-title">${state.cover.title}</h1>
+                                <div class="cover-divider"></div>
+                                <p class="cover-subtitle">${state.cover.subtitle}</p>
+                            </div>
+                            <div class="footer-info"><div class="brand-name">${state.brand}</div></div>
+                        </div>
+                    </div>
+                    <div class="actions"><button class="style-btn" onclick="download('card-cover', 'Cover')">Save Cover PNG</button></div>
+                </div>
+            `;
+
+            // Pages
+            state.pages.forEach((p, i) => {
+                const listItems = p.content.split('\n').map(line => line.trim()).filter(line => line !== '').map(line => {
+                    let cleanText = line.replace(/^[-*•]\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    return `<li>${cleanText}</li>`;
+                }).join('');
+
+                preview.innerHTML += `
+                    <div class="card-container">
+                        <div class="shorts-card ${layoutClass}" id="card-p${i}">
+                            <div class="shorts-card-inner" style="background-image: url(${state.bgs.page || ''}); background-size: cover;">
+                                <div class="card-header-bar"></div>
+                                <div class="page-layout">
+                                    <div class="page-header">
+                                        <div class="page-category">Mastery Tip</div>
+                                        <h2 class="page-title">${p.title}</h2>
+                                    </div>
+                                    <div class="page-body"><ul>${listItems}</ul></div>
+                                    <div class="footer-info">
+                                        <div class="brand-name">${state.brand}</div>
+                                        <div class="page-num">${i + 1} / ${state.pages.length}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="actions"><button class="style-btn" onclick="download('card-p${i}', 'Page_${i+1}')">Save Page ${i+1}</button></div>
+                    </div>
+                `;
+            });
+        }
+
+        async function download(id, name) {
+            const el = document.getElementById(id);
+            const canvas = await html2canvas(el, { scale: 3, useCORS: true });
+            const link = document.createElement('a');
+            link.download = `MockExam_${name}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        window.onload = () => { initColors();  };
+    </script>
+</body>
+</html>
