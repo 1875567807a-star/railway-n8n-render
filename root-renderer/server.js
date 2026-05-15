@@ -4,18 +4,12 @@ import { chromium } from "playwright";
 const app = express();
 const PORT = process.env.PORT || 3010;
 
-/* =========================
-   Middlewares
-========================= */
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.get("/health", (_, res) => res.json({ ok: true }));
 
-/* =========================
-   Theme map
-========================= */
 const THEME_TITLE_BY_ID = {
   pink: "Rose",
   blue: "Ocean",
@@ -29,23 +23,27 @@ const THEME_TITLE_BY_ID = {
   amber: "Amber",
 };
 
-/* =========================
-   Playwright browser
-========================= */
 let browser;
 async function getBrowser() {
   if (!browser) {
     browser = await chromium.launch({
       headless: true,
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
   }
   return browser;
 }
 
-/* =========================================================
-   ✅ OLD ENDPOINT — Question Render（完全不动）
-========================================================= */
+async function hideTransientOverlays(page) {
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll(".fixed.top-4.right-4")) {
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+    }
+  });
+}
+
 app.post("/render", async (req, res) => {
   const themeId = req.body?.themeId || "blue";
   const questionBlock =
@@ -61,8 +59,7 @@ app.post("/render", async (req, res) => {
     });
   }
 
-  const themeTitle =
-    THEME_TITLE_BY_ID[themeId] || THEME_TITLE_BY_ID.blue;
+  const themeTitle = THEME_TITLE_BY_ID[themeId] || THEME_TITLE_BY_ID.blue;
 
   let context;
   try {
@@ -89,6 +86,8 @@ app.post("/render", async (req, res) => {
       .getByRole("button", { name: /Parse and Load Question/i })
       .click();
 
+    await hideTransientOverlays(page);
+
     const card = page
       .locator("div.relative.bg-white.overflow-hidden.shadow-2xl")
       .first();
@@ -105,15 +104,9 @@ app.post("/render", async (req, res) => {
   }
 });
 
-/* =========================================================
-   🆕 NEW ENDPOINT — Text Render（纯文本）
-========================================================= */
 app.post("/render-text", async (req, res) => {
   const themeId = req.body?.themeId || "blue";
-  const text =
-    req.body?.text ||
-    req.body?.aiText ||
-    "";
+  const text = req.body?.text || req.body?.aiText || "";
 
   if (!String(text).trim()) {
     return res.status(400).json({
@@ -122,8 +115,7 @@ app.post("/render-text", async (req, res) => {
     });
   }
 
-  const themeTitle =
-    THEME_TITLE_BY_ID[themeId] || THEME_TITLE_BY_ID.blue;
+  const themeTitle = THEME_TITLE_BY_ID[themeId] || THEME_TITLE_BY_ID.blue;
 
   let context;
   try {
@@ -134,10 +126,9 @@ app.post("/render-text", async (req, res) => {
     });
 
     const page = await context.newPage();
-    await page.goto(
-      `http://127.0.0.1:${PORT}/template.html?mode=text`,
-      { waitUntil: "networkidle" }
-    );
+    await page.goto(`http://127.0.0.1:${PORT}/template.html?mode=text`, {
+      waitUntil: "networkidle",
+    });
 
     await page.waitForSelector("#pasteInput");
 
@@ -146,11 +137,12 @@ app.post("/render-text", async (req, res) => {
       .click()
       .catch(() => {});
 
-    // ✅ 关键：不用 fill（textarea 是隐藏的）
     await page.evaluate((value) => {
       const el = document.getElementById("pasteInput");
       if (el) el.value = value;
     }, text);
+
+    await hideTransientOverlays(page);
 
     const card = page
       .locator("div.relative.bg-white.overflow-hidden.shadow-2xl")
@@ -168,9 +160,6 @@ app.post("/render-text", async (req, res) => {
   }
 });
 
-/* =========================
-   Start server
-========================= */
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Renderer running on http://0.0.0.0:${PORT}`);
 });
