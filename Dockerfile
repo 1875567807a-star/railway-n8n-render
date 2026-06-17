@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 
 ENV NODE_ENV=production
 ENV N8N_USER_FOLDER=/home/node/.n8n
@@ -15,7 +15,7 @@ RUN npm install -g n8n@1.123.5
 RUN mkdir -p /home/node/.n8n/nodes \
   && cd /home/node/.n8n/nodes \
   && npm init -y \
-  && npm install --legacy-peer-deps n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1
+  && npm install n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1
 
 COPY root-renderer/package.json ./root-renderer/package.json
 RUN cd /app/root-renderer \
