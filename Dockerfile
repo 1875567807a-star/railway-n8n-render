@@ -15,7 +15,7 @@ RUN npm install -g n8n@1.123.5
 RUN mkdir -p /home/node/.n8n/nodes \
   && cd /home/node/.n8n/nodes \
   && npm init -y \
-  && npm install --legacy-peer-deps n8n-workflow@1.120.0 n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1
+  && npm install --legacy-peer-deps n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1
 
 COPY root-renderer/package.json ./root-renderer/package.json
 RUN cd /app/root-renderer \
