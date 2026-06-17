@@ -15,7 +15,14 @@ RUN npm install -g n8n@1.123.5
 RUN mkdir -p /home/node/.n8n/nodes \
   && cd /home/node/.n8n/nodes \
   && npm init -y \
-  && npm install n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1
+  && npm install n8n-nodes-feishu-lite@0.4.3 n8n-nodes-feishu-common@0.1.1 \
+  # The Feishu node pulls its own copy of n8n-workflow/n8n-core, which is a
+  # different module instance than n8n core's. That mismatch makes node
+  # registration fail ("Unrecognized node type"). Point them at n8n's copies.
+  && cd /home/node/.n8n/nodes/node_modules \
+  && rm -rf n8n-workflow \
+  && ln -sfn /usr/local/lib/node_modules/n8n/node_modules/n8n-workflow n8n-workflow \
+  && if [ -d /usr/local/lib/node_modules/n8n/node_modules/n8n-core ]; then rm -rf n8n-core && ln -sfn /usr/local/lib/node_modules/n8n/node_modules/n8n-core n8n-core; fi
 
 COPY root-renderer/package.json ./root-renderer/package.json
 RUN cd /app/root-renderer \
